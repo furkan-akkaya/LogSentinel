@@ -1,0 +1,70 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Demo walkthrough · LogSentinel</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="demo-walkthrough">Demo walkthrough</h1>
+<ol>
+<li>Start the app with <code>docker compose up --build -d</code>.</li>
+<li>Open http://127.0.0.1:8765.</li>
+<li>Select <strong>Load demo</strong>. No server or endpoint access is required.</li>
+<li>Check <strong>85 events</strong>, <strong>5 alerts</strong>, <strong>4 hosts</strong>.</li>
+<li>Open <strong>Security Alerts</strong> and select a detection.</li>
+<li>Review the explanation, MITRE mappings, and evidence timeline.</li>
+<li>Select <strong>Inspect record</strong> to see raw and normalized data.</li>
+<li>Set an investigation to <strong>investigating</strong> or <strong>resolved</strong>.</li>
+<li>Open <strong>Log Explorer</strong>, filter source IP <code>203.0.113.42</code>, and apply the filter.</li>
+<li>Check the seven matching SSH failure records.</li>
+<li>Load the demo again. The application reports 85 duplicates and zero new events.</li>
+</ol>
+<h2 id="expected-default-detections">Expected default detections</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Source</th>
+<th>Host / user</th>
+<th>Evidence</th>
+<th>Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSH password guessing</td>
+<td>203.0.113.42</td>
+<td>edge-01 / admin</td>
+<td>7 failures</td>
+<td>High</td>
+</tr>
+<tr>
+<td>SSH success after failures</td>
+<td>198.51.100.24</td>
+<td>app-02 / devops</td>
+<td>4 failures + success</td>
+<td>Critical</td>
+</tr>
+<tr>
+<td>Windows repeated failures</td>
+<td>192.0.2.86</td>
+<td>dc-01 / svc_backup</td>
+<td>6 failures</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Windows success after failures</td>
+<td>203.0.113.77</td>
+<td>ws-finance / j.morgan</td>
+<td>4 failures + success</td>
+<td>Critical</td>
+</tr>
+<tr>
+<td>Repeated sudo failures</td>
+<td>Local</td>
+<td>app-02 / analyst</td>
+<td>4 PAM failures</td>
+<td>Medium</td>
+</tr>
+</tbody>
+</table></div>
+<p>The SSH and Windows success scenarios have four failures. They trigger the success rule's threshold of three, but do not trigger the separate failure threshold of five. Normal events include routine SSH public-key authentication, Windows network logons, and one isolated failed SSH login followed by success. That isolated failure produces no alert.</p>
+<p>The dataset is fixed at October 26, 2026, 08:00–11:41 UTC. Fixed event time makes tests reproducible. Detection has no &quot;now&quot; cutoff, so the demo works regardless of the machine's current date. Documentation IP ranges and private addresses represent synthetic identities.</p>
+<h2 id="manual-import">Manual import</h2>
+<p><code>samples/linux-auth.log</code> and <code>samples/windows-security.json</code> contain the demo. Import either using <strong>Import logs</strong>. Import <code>samples/windows-security.xml</code> after the JSON file to verify cross-format duplicate detection. <code>samples/normal-auth.log</code> should produce no alerts in a fresh database. <code>samples/malformed.log</code> contains two rejected lines.</p>
+<p>Normal-only tests need a fresh database: existing alerts describe previously stored evidence and do not disappear when a benign file is uploaded. For native use, choose a separate <code>LOGSENTINEL_DB</code> path. Do not delete a database containing logs you need.</p>
+<p>Changing thresholds replays all stored events. An unusually low threshold can alert on legitimate retries. Investigate context before treating an alert as a confirmed incident.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

@@ -1,0 +1,167 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SSH password guessing · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="ssh-password-guessing">SSH password guessing</h1>
+<p><a href="../INDEX.html">Project guide</a> · <a href="../learning/HOW_IT_WORKS.html">How it works</a></p>
+<h2 id="observed-behavior">Observed behavior</h2>
+<p>SSH exposes authentication outcomes that can reveal repeated attempts against one account. The parser accepts password and keyboard-interactive failures. Public-key failures remain searchable but do not count toward password guessing.</p>
+<p>This is a <strong>synthetic demo scenario</strong>, not a real incident investigation. All timestamps below are October 26, 2026, in UTC.</p>
+<p><img src="../diagrams/ssh_brute_force.svg" alt="Evidence timeline" /></p>
+<h2 id="actual-source-records">Actual source records</h2>
+<p>These are the records used by the bundled demo and the real detection engine.</p>
+<p>&lt;!-- evidence:start --&gt;</p>
+<pre><code class="language-text">2026-10-26T10:10:00Z edge-01 sshd[5000]: Failed password for invalid user admin from 203.0.113.42 port 51000 ssh2
+2026-10-26T10:10:18Z edge-01 sshd[5001]: Failed password for invalid user admin from 203.0.113.42 port 51001 ssh2
+2026-10-26T10:10:36Z edge-01 sshd[5002]: Failed password for invalid user admin from 203.0.113.42 port 51002 ssh2
+2026-10-26T10:10:54Z edge-01 sshd[5003]: Failed password for invalid user admin from 203.0.113.42 port 51003 ssh2
+2026-10-26T10:11:12Z edge-01 sshd[5004]: Failed password for invalid user admin from 203.0.113.42 port 51004 ssh2
+2026-10-26T10:11:30Z edge-01 sshd[5005]: Failed password for invalid user admin from 203.0.113.42 port 51005 ssh2
+2026-10-26T10:11:48Z edge-01 sshd[5006]: Failed password for invalid user admin from 203.0.113.42 port 51006 ssh2
+</code></pre>
+<p>&lt;!-- evidence:end --&gt;</p>
+<p>The raw method is password. Host, user, IP, PID, and source port come from the log line. The parser does not verify who controlled the source IP.</p>
+<h2 id="normalized-fields-and-correlation-identity">Normalized fields and correlation identity</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Identity field</th>
+<th>Effective matching value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>host</code></td>
+<td><code>edge-01</code></td>
+</tr>
+<tr>
+<td><code>source_ip</code></td>
+<td><code>203.0.113.42</code></td>
+</tr>
+<tr>
+<td><code>user</code></td>
+<td><code>admin</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Windows identities use case-folded host, account, and domain values. Linux account and host comparisons retain case. IPs normalize to canonical addresses. Only the fields listed in this scenario's identity form its correlation group.</p>
+<p>The first record also carries this metadata:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Metadata field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pid</code></td>
+<td><code>5000</code></td>
+</tr>
+<tr>
+<td><code>method</code></td>
+<td><code>password</code></td>
+</tr>
+<tr>
+<td><code>source_port</code></td>
+<td><code>51000</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>See the <a href="../learning/HOW_IT_WORKS.html">normalization guide</a> for source-field interpretation.</p>
+<h2 id="threshold-and-event-time-window">Threshold and event-time window</h2>
+<p>The rule requires <strong>5 failure records within 300 seconds</strong>. The threshold is first reached at <strong>10:11:12 UTC</strong>. The same bounded episode later holds 7 evidence records. Each additional record does not create a separate alert.</p>
+<p>The lower lookback boundary is inclusive. Events exactly 300 seconds apart remain eligible under the default window. At 301 seconds they may no longer form the same qualifying set. A success must be strictly later than its counted failures; an equal timestamp cannot prove ordering.</p>
+<h2 id="timeline-and-measured-result">Timeline and measured result</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Time · UTC</th>
+<th>Normalized event</th>
+<th>Event ID prefix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10:10:00</td>
+<td><code>ssh_failure</code></td>
+<td><code>c2dc05fabcbe</code></td>
+</tr>
+<tr>
+<td>10:10:18</td>
+<td><code>ssh_failure</code></td>
+<td><code>651d4536d32f</code></td>
+</tr>
+<tr>
+<td>10:10:36</td>
+<td><code>ssh_failure</code></td>
+<td><code>cd9823eff5f1</code></td>
+</tr>
+<tr>
+<td>10:10:54</td>
+<td><code>ssh_failure</code></td>
+<td><code>411bdfa2f0c9</code></td>
+</tr>
+<tr>
+<td>10:11:12</td>
+<td><code>ssh_failure</code></td>
+<td><code>4de637a8bb80</code></td>
+</tr>
+<tr>
+<td>10:11:30</td>
+<td><code>ssh_failure</code></td>
+<td><code>864be6cd3f70</code></td>
+</tr>
+<tr>
+<td>10:11:48</td>
+<td><code>ssh_failure</code></td>
+<td><code>2fa09dd6d43f</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>The following snapshot comes from a fresh temporary database with default settings. Full IDs identify reproducible internal records; they do not authenticate their source.</p>
+<p>&lt;!-- result:start --&gt;</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;c84d3c72e30c5b158ecf14f139618cfcd8d84a3673be7e6580b162a4f04359c3&quot;,
+  &quot;rule&quot;: &quot;ssh_brute_force&quot;,
+  &quot;title&quot;: &quot;SSH password guessing&quot;,
+  &quot;severity&quot;: &quot;high&quot;,
+  &quot;first_seen&quot;: &quot;2026-10-26T10:10:00.000000Z&quot;,
+  &quot;last_seen&quot;: &quot;2026-10-26T10:11:48.000000Z&quot;,
+  &quot;evidence_count&quot;: 7,
+  &quot;failure_count&quot;: 7,
+  &quot;success_count&quot;: 0,
+  &quot;identity&quot;: {
+    &quot;host&quot;: &quot;edge-01&quot;,
+    &quot;source_ip&quot;: &quot;203.0.113.42&quot;,
+    &quot;user&quot;: &quot;admin&quot;
+  },
+  &quot;parameters&quot;: {
+    &quot;threshold&quot;: 5,
+    &quot;window_seconds&quot;: 300
+  }
+}
+</code></pre>
+<p>&lt;!-- result:end --&gt;</p>
+<p>The complete demo produces five alerts. This identity produces the single alert shown above. Severity is a fixed rule label, not a probability of compromise.</p>
+<h2 id="normal-explanations">Normal explanations</h2>
+<p>A mistyped password or stale automation credential can produce the same pattern.</p>
+<h2 id="what-the-rule-misses">What the rule misses</h2>
+<p>A source rotating across accounts stays below each per-user counter. Multiple IPs attacking one account remain separate. This rule also misses attempts spread beyond the time window.</p>
+<p>Across the SSH and Windows rules, password spraying across accounts and distributed attempts across IPs remain separate groups. A local sudo sequence uses terminal context instead of a network IP. These are deliberate coverage limits, not measured false-negative rates.</p>
+<h2 id="suggested-analyst-checks--not-automated">Suggested analyst checks · not automated</h2>
+<ol>
+<li>Confirm the source IP and account are expected.</li>
+<li>Review adjacent SSH outcomes and authentication configuration.</li>
+<li>Record the remaining uncertainty before taking account or host action.</li>
+</ol>
+<p>LogSentinel automatically parses, deduplicates, correlates, and links evidence. It does not contact users, query account state, collect session commands, or perform containment.</p>
+<h2 id="attck-interpretation">ATT&amp;CK interpretation</h2>
+<p>Password guessing is the relevant behavioral hypothesis. Repetition alone cannot identify the operator or prove malicious intent. See <a href="https://attack.mitre.org/techniques/T1110/001/">T1110.001</a> and the broader <a href="https://attack.mitre.org/techniques/T1110/001/">ATT&amp;CK technique context</a>. The mapping describes a behavior to investigate.</p>
+<h2 id="reproduce-without-touching-your-working-database">Reproduce without touching your working database</h2>
+<ol>
+<li>Install the project and test extra from the README.</li>
+<li>Run <code>python tools/verify_examples.py</code> from the repository root.</li>
+<li>Compare this file's result JSON with <code>docs/examples.json</code>.</li>
+<li>Run <code>python -m pytest tests/test_examples.py tests/test_detection.py</code>.</li>
+</ol>
+<p>The verification tool creates and removes its own temporary database. It validates every source record and the alert snapshot. In the browser, open this rule under <strong>Security Alerts</strong>, then inspect an evidence record.</p>
+<p>Code: <a href="../../_source/logsentinel/parsers.py.html">parser</a>, <a href="../../_source/logsentinel/detection.py.html">correlation</a>, <a href="../../_source/logsentinel/storage.py.html">storage</a>, <a href="../../_source/logsentinel/guidance.py.html">guidance</a>.</p>
+<p>Tests: <a href="../../_source/tests/test_examples.py.html">documented examples</a>, <a href="../../_source/tests/test_detection.py.html">thresholds and identities</a>, <a href="../../_source/tests/test_api.py.html">API and evidence</a>.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

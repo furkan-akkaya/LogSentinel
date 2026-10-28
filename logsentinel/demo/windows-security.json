@@ -1,0 +1,597 @@
+[
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T08:00:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9000",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T08:09:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9001",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T08:18:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9002",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T08:27:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9003",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T08:36:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9004",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T08:45:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9005",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T08:54:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9006",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T09:03:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9007",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T09:12:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9008",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T09:21:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9009",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T09:30:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9010",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T09:39:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9011",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T09:48:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9012",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T09:57:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9013",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:06:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9014",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:15:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9015",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:24:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9016",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4625,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:25:00Z"
+      },
+      "Computer": "dc-01",
+      "EventRecordID": "10000",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "svc_backup",
+      "TargetDomainName": "LAB",
+      "IpAddress": "192.0.2.86",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4625,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:25:24Z"
+      },
+      "Computer": "dc-01",
+      "EventRecordID": "10001",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "svc_backup",
+      "TargetDomainName": "LAB",
+      "IpAddress": "192.0.2.86",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4625,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:25:48Z"
+      },
+      "Computer": "dc-01",
+      "EventRecordID": "10002",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "svc_backup",
+      "TargetDomainName": "LAB",
+      "IpAddress": "192.0.2.86",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4625,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:26:12Z"
+      },
+      "Computer": "dc-01",
+      "EventRecordID": "10003",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "svc_backup",
+      "TargetDomainName": "LAB",
+      "IpAddress": "192.0.2.86",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4625,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:26:36Z"
+      },
+      "Computer": "dc-01",
+      "EventRecordID": "10004",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "svc_backup",
+      "TargetDomainName": "LAB",
+      "IpAddress": "192.0.2.86",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4625,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:27:00Z"
+      },
+      "Computer": "dc-01",
+      "EventRecordID": "10005",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "svc_backup",
+      "TargetDomainName": "LAB",
+      "IpAddress": "192.0.2.86",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:33:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9017",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:42:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9018",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T10:51:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9019",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4625,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T11:00:00Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "11000",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "203.0.113.77",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T11:00:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9020",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4625,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T11:00:22Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "11001",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "203.0.113.77",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4625,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T11:00:44Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "11002",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "203.0.113.77",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4625,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T11:01:06Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "11003",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "203.0.113.77",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T11:02:00Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "11010",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "203.0.113.77",
+      "LogonType": "10"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T11:09:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9021",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T11:18:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9022",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  },
+  {
+    "System": {
+      "EventID": 4624,
+      "TimeCreated": {
+        "SystemTime": "2026-10-26T11:27:05Z"
+      },
+      "Computer": "ws-finance",
+      "EventRecordID": "9023",
+      "Channel": "Security"
+    },
+    "EventData": {
+      "TargetUserName": "j.morgan",
+      "TargetDomainName": "LAB",
+      "IpAddress": "10.0.0.18",
+      "LogonType": "3"
+    }
+  }
+]

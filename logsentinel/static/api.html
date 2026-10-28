@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>LogSentinel API</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main>
+      <a class="text-link" href="/">← Security workspace</a>
+      <h1>Local API reference</h1>
+      <p class="muted">
+        All endpoints use JSON responses. Imports use multipart form data. No
+        authentication: bind to loopback only.
+      </p>
+      <p><a class="text-link" href="/openapi.json">Full OpenAPI schema →</a></p>
+      <div class="panel table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>METHOD</th>
+              <th>ENDPOINT</th>
+              <th>PURPOSE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>GET</td>
+              <td>/api/health</td>
+              <td>Application and database health</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td>/api/demo</td>
+              <td>Import bundled synthetic events</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td>/api/import</td>
+              <td>file, format, year, timezone_offset</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td>/api/events</td>
+              <td>
+                q, source, event_type, source_ip, user, host, start, end, limit,
+                offset
+              </td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td>/api/events/{id}</td>
+              <td>Normalized event and raw record</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td>/api/alerts</td>
+              <td>severity, status, limit, offset</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td>/api/alerts/{id}</td>
+              <td>Detection explanation and evidence</td>
+            </tr>
+            <tr>
+              <td>PATCH</td>
+              <td>/api/alerts/{id}</td>
+              <td>Set status: new, investigating, resolved</td>
+            </tr>
+            <tr>
+              <td>GET / PUT</td>
+              <td>/api/settings</td>
+              <td>Read / replace thresholds and reanalyze</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td>/api/stats</td>
+              <td>Counts, sources, severity, hourly activity</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <h2>Examples</h2>
+      <pre>
+curl -X POST http://127.0.0.1:8765/api/demo
+curl 'http://127.0.0.1:8765/api/events?source=linux&amp;event_type=ssh_failure'
+curl -F file=@samples/linux-auth.log -F format=linux -F year=2026 \
+  -F timezone_offset=+00:00 http://127.0.0.1:8765/api/import</pre>
+      <p class="muted">
+        Date filters accept ISO 8601 timestamps; dates without offsets use UTC.
+        User, IP, host and event type filters use exact stored values. Search is
+        a case-insensitive literal substring. Limit: 1–200; default: 50.
+      </p>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,126 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Executed validation · v1.1.0 · LogSentinel</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="executed-validation--v110">Executed validation · v1.1.0</h1>
+<p>Validation date: <strong>October 28, 2026</strong>. This document records the follow-up session. Earlier results are distinguished from checks rerun here. No remote GitHub Actions execution is claimed.</p>
+<h2 id="baseline-before-changes">Baseline before changes</h2>
+<p>The original suite was executed in this session: <strong>67 tests passed</strong> on Python 3.13.7. A separate temporary database reproduced <strong>85 inserted events, five alerts, and four hosts</strong>. Evidence counts were 7, 5, 6, 5, and 4 for the five documented rules.</p>
+<p>The earlier review's source-validation finding still matched the starting code. XML Provider attributes did not reach validation. Explicitly conflicting Channel/Provider fields could be accepted as Windows Security events.</p>
+<h2 id="updated-automated-results">Updated automated results</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Environment / check</th>
+<th>Actual result in this session</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macOS 27.0.1 Apple Silicon, Python 3.13.7</td>
+<td><strong>117 tests passed</strong></td>
+</tr>
+<tr>
+<td>macOS 27.0.1 Apple Silicon, Python 3.11.15</td>
+<td><strong>117 tests passed</strong></td>
+</tr>
+<tr>
+<td>Linux ARM64, built Python 3.13.18 Docker image</td>
+<td><strong>117 tests passed</strong></td>
+</tr>
+<tr>
+<td>Windows source tests, focused run</td>
+<td><strong>38 tests passed</strong></td>
+</tr>
+<tr>
+<td>Chromium 156 / Playwright 1.64.1</td>
+<td><strong>Updated browser workflow passed</strong></td>
+</tr>
+<tr>
+<td>Docker Desktop 4.94.0 / Engine 29.8.2</td>
+<td><strong>Updated Compose lifecycle passed</strong></td>
+</tr>
+<tr>
+<td>Documented examples</td>
+<td><strong>Five results and 27 evidence records matched the actual engine</strong></td>
+</tr>
+<tr>
+<td>Ruff undefined/unused-name checks</td>
+<td><strong>Passed</strong></td>
+</tr>
+<tr>
+<td>JavaScript syntax / Compose configuration</td>
+<td><strong>Passed</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>The 38 Windows tests are included in the 117-test suite; they are not additional independent tests. Test count is not a security score or detection-accuracy measure.</p>
+<h3 id="added-source-validation-coverage">Added source-validation coverage</h3>
+<ul>
+<li>Correct XML Provider attributes and JSON provider representations.</li>
+<li>Wrong channel, provider name, or GUID; mismatched name/GUID pairs.</li>
+<li>Empty, null, malformed, and contradictory explicit values.</li>
+<li>Missing channel/provider compatibility in both XML and JSON.</li>
+<li>Existing normalized-ID compatibility, including XML/JSON equivalence.</li>
+<li>API regression: five contradictory records yield five rejections, zero inserted events, and zero alerts.</li>
+<li>Partial import: a valid event remains accepted next to a source rejection.</li>
+</ul>
+<h3 id="added-explanation-and-documentation-coverage">Added explanation and documentation coverage</h3>
+<ul>
+<li>Counts derive from actual evidence; applied thresholds and windows follow settings.</li>
+<li>Windows domain/logon type appear in the effective identity.</li>
+<li>Legacy alert explanations do not rewrite stored bodies.</li>
+<li>Removed and restored alerts return as <code>new</code>, reflecting the lack of durable case history.</li>
+<li>Per-account spraying and per-IP distributed attempts remain out of scope in SSH and Windows tests.</li>
+<li>Five scenario snapshots match the real engine and actual raw records.</li>
+<li>Normalized walkthrough records and the SSH case timeline match the same output.</li>
+<li>Offline guide inputs, local links, fragments, source views, and HTTP assets are checked.</li>
+</ul>
+<h2 id="real-browser-workflow">Real browser workflow</h2>
+<p>The script starts a real Uvicorn process and an isolated temporary database. It does not use the user's working service or database.</p>
+<ol>
+<li>Load the demo from the empty state and verify 85 events / five alerts.</li>
+<li>Navigate Dashboard, Log Explorer, and Security Alerts.</li>
+<li>Filter seven SSH records by source IP and inspect raw/normalized data.</li>
+<li>Open all five alert types and verify actual thresholds and windows.</li>
+<li>Verify Windows domain and logon type in the alert view.</li>
+<li>Expand interpretation using the keyboard and close dialogs with Escape.</li>
+<li>Check all five alert dialogs at 390px width without horizontal dialog overflow.</li>
+<li>Verify the sticky close control remains visible after scrolling the dialog.</li>
+<li>Change investigation status and settings; confirm the displayed SSH threshold changes to six.</li>
+<li>Reimport the Linux file and verify 50 duplicates.</li>
+<li>Render a hostile HTML username as text without executing it.</li>
+<li>Open the offline scenario and walkthrough guides; check mobile page overflow.</li>
+<li>Simulate an API outage and recover with Retry.</li>
+<li>Open the local API reference.</li>
+</ol>
+<p>The successful workflow had no JavaScript page errors, unexpected script dialogs, or third-party requests. Native HTML dialogs, summaries, labels, headings, and a guide skip link support keyboard use. This is not a full screen-reader or WCAG certification.</p>
+<p>Screenshots in <code>docs/screenshots/</code> were generated from the isolated synthetic workflow. They contain no user-supplied production logs.</p>
+<h2 id="real-docker-lifecycle">Real Docker lifecycle</h2>
+<p>The updated test builds the distributed application in its own Compose project and named volume on an ephemeral loopback port. It verifies v1.1 health, packaged guides, explanation fields, demo, duplicate resistance, and UID <code>10001</code>.</p>
+<p>It restarts the container, then removes and recreates that container while retaining its test volume. Events and a resolved investigation remain present. The test removes only its own test project and volume afterward.</p>
+<p>The Linux test suite also ran in a read-only container with temporary dependency and database storage. The user's working volume was not mounted by either test.</p>
+<h2 id="working-data-precautions">Working-data precautions</h2>
+<p>A consistent SQLite backup was taken through SQLite's backup API before deployment work. It is kept in a private working directory outside release outputs. Tests and documentation examples use disposable databases.</p>
+<p>No schema change or historical-event reparse is required. Existing valid event IDs remain compatible. Legacy alert explanations are computed on read. The update does not delete historical records or manufacture source provenance for them.</p>
+<p>The live service was updated to v1.1.0 and checked through read-only requests. All 85 event rows, five stored alert bodies, investigation statuses, and configuration matched the pre-update snapshot exactly. Five legacy explanations and the packaged guide were available after the update. No demo import or setting change was sent to the working service.</p>
+<h2 id="reproduce">Reproduce</h2>
+<p>From a fresh source checkout:</p>
+<pre><code class="language-sh">python -m pip install -r requirements.txt
+python -m pip install -e '.[test,browser,docs]'
+python tools/build_guides.py
+python -m pytest
+python -m pytest tests/test_windows_source.py
+python tools/verify_examples.py
+python -m playwright install chromium
+python tests/browser_smoke.py
+python tests/docker_smoke.py
+</code></pre>
+<p>To refresh screenshots, run <code>python tests/browser_smoke.py --screenshots docs/screenshots</code>, then rebuild guides. Screenshots and linked sources are guide inputs; the manifest detects stale snapshots.</p>
+<h2 id="limits-not-resolved-or-verified">Limits not resolved or verified</h2>
+<ul>
+<li>Actual Windows or Intel x86-64 execution; Windows export commands remain untested here.</li>
+<li>Live host collection, arbitrary export formats, or binary EVTX parsing.</li>
+<li>Production throughput, false-positive rates, recall, or complete incident attribution.</li>
+<li>Screen-reader coverage and a full accessibility audit.</li>
+<li>Durable case history, account authentication, or encrypted log storage.</li>
+<li>Remote GitHub CI, public hosting, push, tags, or a GitHub release.</li>
+</ul>
+<p>The source check validates supplied declarations. Missing source fields remain accepted for compatibility. Neither accepted declarations nor event hashes establish authentic source activity.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

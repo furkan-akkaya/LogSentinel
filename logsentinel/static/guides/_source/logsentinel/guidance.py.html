@@ -1,0 +1,81 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>logsentinel/guidance.py · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../../docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1>logsentinel/guidance.py</h1><p>Repository source snapshot packaged with this release.</p><pre class="source-code"><code><span id="L1"><a href="#L1" aria-label="Line 1">   1</a> &quot;&quot;&quot;Short investigation context; counts and parameters come from real alerts.&quot;&quot;&quot;</span>
+<span id="L2"><a href="#L2" aria-label="Line 2">   2</a> </span>
+<span id="L3"><a href="#L3" aria-label="Line 3">   3</a> from .detection import correlation_key, THRESHOLD_SETTINGS</span>
+<span id="L4"><a href="#L4" aria-label="Line 4">   4</a> </span>
+<span id="L5"><a href="#L5" aria-label="Line 5">   5</a> GUIDANCE = {</span>
+<span id="L6"><a href="#L6" aria-label="Line 6">   6</a>     &quot;ssh_brute_force&quot;: {</span>
+<span id="L7"><a href="#L7" aria-label="Line 7">   7</a>         &quot;importance&quot;: &quot;Repeated password or keyboard-interactive failures can indicate guessing against one account.&quot;,</span>
+<span id="L8"><a href="#L8" aria-label="Line 8">   8</a>         &quot;benign&quot;: &quot;A mistyped password or stale automation credential can produce the same pattern.&quot;,</span>
+<span id="L9"><a href="#L9" aria-label="Line 9">   9</a>         &quot;checks&quot;: [</span>
+<span id="L10"><a href="#L10" aria-label="Line 10">  10</a>             &quot;Confirm the source IP and account are expected.&quot;,</span>
+<span id="L11"><a href="#L11" aria-label="Line 11">  11</a>             &quot;Review adjacent SSH outcomes and authentication configuration.&quot;,</span>
+<span id="L12"><a href="#L12" aria-label="Line 12">  12</a>         ],</span>
+<span id="L13"><a href="#L13" aria-label="Line 13">  13</a>         &quot;limits&quot;: &quot;Does not aggregate different users or IPs. Slow attempts outside the window and public-key failures are excluded.&quot;,</span>
+<span id="L14"><a href="#L14" aria-label="Line 14">  14</a>     },</span>
+<span id="L15"><a href="#L15" aria-label="Line 15">  15</a>     &quot;ssh_success_after_failures&quot;: {</span>
+<span id="L16"><a href="#L16" aria-label="Line 16">  16</a>         &quot;importance&quot;: &quot;Authentication succeeded after repeated matching failures. This warrants review, not a compromise verdict.&quot;,</span>
+<span id="L17"><a href="#L17" aria-label="Line 17">  17</a>         &quot;benign&quot;: &quot;The legitimate user may have corrected a password or switched authentication methods.&quot;,</span>
+<span id="L18"><a href="#L18" aria-label="Line 18">  18</a>         &quot;checks&quot;: [</span>
+<span id="L19"><a href="#L19" aria-label="Line 19">  19</a>             &quot;Verify the login with the account owner and compare expected source addresses.&quot;,</span>
+<span id="L20"><a href="#L20" aria-label="Line 20">  20</a>             &quot;Review session activity in separately collected host logs.&quot;,</span>
+<span id="L21"><a href="#L21" aria-label="Line 21">  21</a>         ],</span>
+<span id="L22"><a href="#L22" aria-label="Line 22">  22</a>         &quot;limits&quot;: &quot;Misses changed IPs/users and slow attempts. It cannot identify the operator or inspect post-login commands.&quot;,</span>
+<span id="L23"><a href="#L23" aria-label="Line 23">  23</a>     },</span>
+<span id="L24"><a href="#L24" aria-label="Line 24">  24</a>     &quot;windows_brute_force&quot;: {</span>
+<span id="L25"><a href="#L25" aria-label="Line 25">  25</a>         &quot;importance&quot;: &quot;Repeated 4625 events show failed logons. They do not by themselves establish wrong passwords.&quot;,</span>
+<span id="L26"><a href="#L26" aria-label="Line 26">  26</a>         &quot;benign&quot;: &quot;Stale service credentials, account lockout, or logon restrictions may cause repeated failures.&quot;,</span>
+<span id="L27"><a href="#L27" aria-label="Line 27">  27</a>         &quot;checks&quot;: [</span>
+<span id="L28"><a href="#L28" aria-label="Line 28">  28</a>             &quot;Inspect Status and SubStatus in the raw record when present.&quot;,</span>
+<span id="L29"><a href="#L29" aria-label="Line 29">  29</a>             &quot;Check account state, expected logon type, and service configuration.&quot;,</span>
+<span id="L30"><a href="#L30" aria-label="Line 30">  30</a>         ],</span>
+<span id="L31"><a href="#L31" aria-label="Line 31">  31</a>         &quot;limits&quot;: &quot;Requires matching domain, logon type, user, host, and IP. It does not aggregate distributed attempts or infer failure causes.&quot;,</span>
+<span id="L32"><a href="#L32" aria-label="Line 32">  32</a>     },</span>
+<span id="L33"><a href="#L33" aria-label="Line 33">  33</a>     &quot;windows_success_after_failures&quot;: {</span>
+<span id="L34"><a href="#L34" aria-label="Line 34">  34</a>         &quot;importance&quot;: &quot;A 4624 logon follows matching 4625 failures. A created session is not proof of account takeover.&quot;,</span>
+<span id="L35"><a href="#L35" aria-label="Line 35">  35</a>         &quot;benign&quot;: &quot;A user may recover from a typo, or an administrator may fix an account or service configuration.&quot;,</span>
+<span id="L36"><a href="#L36" aria-label="Line 36">  36</a>         &quot;checks&quot;: [</span>
+<span id="L37"><a href="#L37" aria-label="Line 37">  37</a>             &quot;Inspect raw failure codes and confirm the expected user, domain, and logon type.&quot;,</span>
+<span id="L38"><a href="#L38" aria-label="Line 38">  38</a>             &quot;Correlate session activity using additional host logs and confirm the login with its owner.&quot;,</span>
+<span id="L39"><a href="#L39" aria-label="Line 39">  39</a>         ],</span>
+<span id="L40"><a href="#L40" aria-label="Line 40">  40</a>         &quot;limits&quot;: &quot;Changing domain, logon type, host, account, or IP splits the sequence. Session behavior is outside this rule.&quot;,</span>
+<span id="L41"><a href="#L41" aria-label="Line 41">  41</a>     },</span>
+<span id="L42"><a href="#L42" aria-label="Line 42">  42</a>     &quot;sudo_failures&quot;: {</span>
+<span id="L43"><a href="#L43" aria-label="Line 43">  43</a>         &quot;importance&quot;: &quot;Repeated local sudo PAM failures can indicate attempts to authenticate for privileged actions.&quot;,</span>
+<span id="L44"><a href="#L44" aria-label="Line 44">  44</a>         &quot;benign&quot;: &quot;The invoking user may have mistyped a password or misunderstood the sudo policy.&quot;,</span>
+<span id="L45"><a href="#L45" aria-label="Line 45">  45</a>         &quot;checks&quot;: [</span>
+<span id="L46"><a href="#L46" aria-label="Line 46">  46</a>             &quot;Confirm the invoking user&#x27;s activity and inspect the terminal context.&quot;,</span>
+<span id="L47"><a href="#L47" aria-label="Line 47">  47</a>             &quot;Review sudo policy and additional command/session logs if available.&quot;,</span>
+<span id="L48"><a href="#L48" aria-label="Line 48">  48</a>         ],</span>
+<span id="L49"><a href="#L49" aria-label="Line 49">  49</a>         &quot;limits&quot;: &quot;Requires invoking user and terminal. Summary records do not count; activity across terminals is not combined.&quot;,</span>
+<span id="L50"><a href="#L50" aria-label="Line 50">  50</a>     },</span>
+<span id="L51"><a href="#L51" aria-label="Line 51">  51</a> }</span>
+<span id="L52"><a href="#L52" aria-label="Line 52">  52</a> </span>
+<span id="L53"><a href="#L53" aria-label="Line 53">  53</a> </span>
+<span id="L54"><a href="#L54" aria-label="Line 54">  54</a> def explain_alert(alert, events, current_settings):</span>
+<span id="L55"><a href="#L55" aria-label="Line 55">  55</a>     key = correlation_key(events[-1])</span>
+<span id="L56"><a href="#L56" aria-label="Line 56">  56</a>     fields = (</span>
+<span id="L57"><a href="#L57" aria-label="Line 57">  57</a>         (&quot;host&quot;, &quot;user&quot;, &quot;terminal&quot;)</span>
+<span id="L58"><a href="#L58" aria-label="Line 58">  58</a>         if alert[&quot;rule&quot;] == &quot;sudo_failures&quot;</span>
+<span id="L59"><a href="#L59" aria-label="Line 59">  59</a>         else (</span>
+<span id="L60"><a href="#L60" aria-label="Line 60">  60</a>             (&quot;host&quot;, &quot;source_ip&quot;, &quot;user&quot;, &quot;domain&quot;, &quot;logon_type&quot;)</span>
+<span id="L61"><a href="#L61" aria-label="Line 61">  61</a>             if events[-1][&quot;source&quot;] == &quot;windows&quot;</span>
+<span id="L62"><a href="#L62" aria-label="Line 62">  62</a>             else (&quot;host&quot;, &quot;source_ip&quot;, &quot;user&quot;)</span>
+<span id="L63"><a href="#L63" aria-label="Line 63">  63</a>         )</span>
+<span id="L64"><a href="#L64" aria-label="Line 64">  64</a>     )</span>
+<span id="L65"><a href="#L65" aria-label="Line 65">  65</a>     setting_key = THRESHOLD_SETTINGS[alert[&quot;rule&quot;]]</span>
+<span id="L66"><a href="#L66" aria-label="Line 66">  66</a>     # v1.0 alerts lack parameter snapshots. Config and alerts were updated in</span>
+<span id="L67"><a href="#L67" aria-label="Line 67">  67</a>     # one transaction, so that version&#x27;s current config describes those alerts.</span>
+<span id="L68"><a href="#L68" aria-label="Line 68">  68</a>     parameters = alert.get(&quot;parameters&quot;) or {</span>
+<span id="L69"><a href="#L69" aria-label="Line 69">  69</a>         &quot;threshold&quot;: current_settings[setting_key],</span>
+<span id="L70"><a href="#L70" aria-label="Line 70">  70</a>         &quot;window_seconds&quot;: current_settings[&quot;window_seconds&quot;],</span>
+<span id="L71"><a href="#L71" aria-label="Line 71">  71</a>     }</span>
+<span id="L72"><a href="#L72" aria-label="Line 72">  72</a>     return {</span>
+<span id="L73"><a href="#L73" aria-label="Line 73">  73</a>         **GUIDANCE[alert[&quot;rule&quot;]],</span>
+<span id="L74"><a href="#L74" aria-label="Line 74">  74</a>         &quot;failure_count&quot;: sum(e[&quot;event_type&quot;].endswith(&quot;failure&quot;) for e in events),</span>
+<span id="L75"><a href="#L75" aria-label="Line 75">  75</a>         &quot;success_count&quot;: sum(e[&quot;event_type&quot;].endswith(&quot;success&quot;) for e in events),</span>
+<span id="L76"><a href="#L76" aria-label="Line 76">  76</a>         &quot;evidence_count&quot;: len(events),</span>
+<span id="L77"><a href="#L77" aria-label="Line 77">  77</a>         &quot;identity&quot;: dict(zip(fields, key or [])),</span>
+<span id="L78"><a href="#L78" aria-label="Line 78">  78</a>         &quot;parameters&quot;: parameters,</span>
+<span id="L79"><a href="#L79" aria-label="Line 79">  79</a>         &quot;threshold_setting&quot;: setting_key,</span>
+<span id="L80"><a href="#L80" aria-label="Line 80">  80</a>         &quot;guide_url&quot;: f&quot;/static/guides/docs/detections/{alert[&#x27;rule&#x27;]}.html&quot;,</span>
+<span id="L81"><a href="#L81" aria-label="Line 81">  81</a>     }</span></code></pre></main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

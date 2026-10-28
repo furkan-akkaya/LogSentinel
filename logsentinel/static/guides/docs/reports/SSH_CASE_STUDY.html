@@ -1,0 +1,92 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Synthetic case study: SSH success after failures · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="synthetic-case-study-ssh-success-after-failures">Synthetic case study: SSH success after failures</h1>
+<p><a href="../INDEX.html">Project guide</a> · <a href="../detections/ssh_success_after_failures.html">Scenario and complete raw records</a></p>
+<p><strong>Scope:</strong> a reproducible synthetic case. This is not a report of a real attack or an investigation performed in a real organization.</p>
+<p><img src="../diagrams/ssh_success_after_failures.svg" alt="Case timeline" /></p>
+<h2 id="1-incident-summary">1. Incident summary</h2>
+<p>On October 26, 2026, four failed password authentications preceded one accepted password authentication on <code>app-02</code>. Every record names <code>devops</code> and source IP <code>198.51.100.24</code>.</p>
+<p>The 90-second sequence triggers <code>ssh_success_after_failures</code>. The alert has critical rule severity and five linked evidence records. The evidence does not establish who logged in or what they did.</p>
+<h2 id="2-data-source-and-scope">2. Data source and scope</h2>
+<p>The source is <a href="../../_source/samples/linux-auth.log.html">the bundled Linux auth sample</a>, parsed by the same engine used for uploaded files. The analyzed identity contains five SSH records from 10:40:00 to 10:41:30 UTC.</p>
+<p>The full demo also includes other hosts and identities. They are separate correlation groups and do not contribute to this case. No endpoint agent, command history, network capture, or external enrichment was used.</p>
+<h2 id="3-timeline">3. Timeline</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Time · UTC</th>
+<th>Observation</th>
+<th>Additional raw fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10:40:00</td>
+<td><code>ssh_failure</code></td>
+<td>PID <code>6000</code>, source port <code>52000</code></td>
+</tr>
+<tr>
+<td>10:40:20</td>
+<td><code>ssh_failure</code></td>
+<td>PID <code>6001</code>, source port <code>52001</code></td>
+</tr>
+<tr>
+<td>10:40:40</td>
+<td><code>ssh_failure</code></td>
+<td>PID <code>6002</code>, source port <code>52002</code></td>
+</tr>
+<tr>
+<td>10:41:00</td>
+<td><code>ssh_failure</code></td>
+<td>PID <code>6003</code>, source port <code>52003</code></td>
+</tr>
+<tr>
+<td>10:41:30</td>
+<td><code>ssh_success</code></td>
+<td>PID <code>6010</code>, source port <code>52010</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>The source ports and PIDs differ. They are event metadata, not session linkage. The correlation key is host + source IP + user.</p>
+<h2 id="4-verified-observations">4. Verified observations</h2>
+<ol>
+<li>All five records match <code>app-02 / 198.51.100.24 / devops</code>.</li>
+<li>Four records say <code>Failed password</code>; the last says <code>Accepted password</code>.</li>
+<li>The successful record is strictly later than every counted failure.</li>
+<li>The four failures fit inside the configured 300-second lookback before success.</li>
+<li>The real engine creates one alert with ID <code>a93aea77b0912d5f3e91239bd39acaa60d9dbc9c4634d584f109dfcb57a57be5</code>.</li>
+<li>The success threshold is <strong>three failures</strong>, so four failures satisfy that rule.</li>
+<li>The independent SSH failure threshold is <strong>five failures</strong>, so this sequence does not trigger <code>ssh_brute_force</code>.</li>
+</ol>
+<p>The word critical expresses the rule's review priority. It is not a calculated probability or confirmed-impact label.</p>
+<h2 id="5-possible-explanations--hypotheses">5. Possible explanations · hypotheses</h2>
+<p>An unauthorized operator could have guessed a valid password. A legitimate user could also have corrected repeated typing mistakes. An expected script with stale credentials might have been fixed before the successful attempt.</p>
+<p>The sample alone cannot distinguish these explanations. Authentication outcomes identify an account and source address, not the person operating them.</p>
+<h2 id="6-missing-evidence">6. Missing evidence</h2>
+<ul>
+<li>Confirmation from the account owner.</li>
+<li>The expected source-IP inventory and access schedule.</li>
+<li>Session identifiers and post-login commands or process activity.</li>
+<li>Host integrity evidence, authorization context, and change records.</li>
+<li>Independent evidence that the file itself represents authentic source activity.</li>
+</ul>
+<p>The SHA-256 event IDs identify normalized records for deduplication. They do not fill these evidence gaps.</p>
+<h2 id="7-suggested-next-checks--not-performed-by-logsentinel">7. Suggested next checks · not performed by LogSentinel</h2>
+<ol>
+<li>Confirm whether the account owner expected this login.</li>
+<li>Compare the address against approved access paths and shared gateways.</li>
+<li>Collect adjacent SSH/session records and relevant command or process logs from authorized sources.</li>
+<li>Check credential changes and account policy changes near the sequence.</li>
+<li>Record which hypothesis each additional source supports before taking containment action.</li>
+</ol>
+<p>These are analyst recommendations. The application does not contact users, collect commands, inspect processes, reset credentials, or isolate hosts.</p>
+<h2 id="8-measured-conclusion">8. Measured conclusion</h2>
+<p>The sample demonstrates <strong>a matching authentication-failure sequence followed by success</strong>. It warrants investigation in a real environment. It does not prove successful password guessing, account takeover, or post-login impact.</p>
+<p><a href="https://attack.mitre.org/techniques/T1110/001/">T1110.001</a> and <a href="https://attack.mitre.org/techniques/T1078/">T1078</a> are possible behavioral interpretations. The evidence supports reviewing them, not asserting them as facts.</p>
+<h2 id="reproduce">Reproduce</h2>
+<ol>
+<li>Run <code>python tools/verify_examples.py</code> from the repository root.</li>
+<li>Run <code>python -m pytest tests/test_examples.py tests/test_detection.py tests/test_api.py</code>.</li>
+<li>In an isolated demo, open <strong>SSH success after failures</strong> under <strong>Security Alerts</strong>.</li>
+<li>Inspect the five records and compare the matching identity and parameters.</li>
+</ol>
+<p>The verifier and tests use their own temporary databases. See <a href="../detections/ssh_success_after_failures.html">scenario details</a>, <a href="../../_source/logsentinel/detection.py.html">engine</a>, <a href="../../_source/tests/test_examples.py.html">tests</a>, and <a href="../VALIDATION.html">validation results</a>.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

@@ -1,0 +1,63 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LogSentinel project guide · LogSentinel</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="logsentinel-project-guide">LogSentinel project guide</h1>
+<p>LogSentinel makes authentication activity easier to investigate. Import Linux or Windows files, review five rule-based detections, and follow each alert to its source evidence.</p>
+<p>The reproducible demo contains <strong>85 events, four hosts, and five alerts</strong>. Every result comes from the same parser and detection engine used for uploads.</p>
+<h2 id="try-the-working-product">Try the working product</h2>
+<ol>
+<li>Follow the <a href="../README.html">README setup</a>.</li>
+<li>Open the local workspace and select <strong>Load demo</strong>.</li>
+<li>Open an alert and inspect a source record.</li>
+</ol>
+<p>The application has a dashboard, a searchable log explorer, and an investigation view. This guide explains the implementation behind those screens.</p>
+<h2 id="follow-one-record-through-the-system">Follow one record through the system</h2>
+<p><img src="diagrams/pipeline.svg" alt="Processing flow" /></p>
+<p>Start with <a href="learning/HOW_IT_WORKS.html">How it works</a>. It maps actual Linux and Windows fields through UTC normalization, duplicate control, storage, correlation, and evidence review.</p>
+<h2 id="inspect-the-five-scenarios">Inspect the five scenarios</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Measured demo result</th>
+<th>Explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSH password guessing</td>
+<td>7 failures → 1 high alert</td>
+<td><a href="detections/ssh_brute_force.html">Scenario</a></td>
+</tr>
+<tr>
+<td>SSH success after failures</td>
+<td>4 failures + 1 success → 1 critical alert</td>
+<td><a href="detections/ssh_success_after_failures.html">Scenario</a></td>
+</tr>
+<tr>
+<td>Windows repeated failures</td>
+<td>6 failures → 1 high alert</td>
+<td><a href="detections/windows_brute_force.html">Scenario</a></td>
+</tr>
+<tr>
+<td>Windows success after failures</td>
+<td>4 failures + 1 success → 1 critical alert</td>
+<td><a href="detections/windows_success_after_failures.html">Scenario</a></td>
+</tr>
+<tr>
+<td>Sudo authentication failures</td>
+<td>4 PAM records → 1 medium alert</td>
+<td><a href="detections/sudo_failures.html">Scenario</a></td>
+</tr>
+</tbody>
+</table></div>
+<p>Each scenario includes source records, an identity key, thresholds, a timeline, an engine-verified result, normal explanations, and analyst recommendations.</p>
+<p>Read the <a href="reports/SSH_CASE_STUDY.html">synthetic SSH case study</a> for a concise technical report. It separates verified observations, hypotheses, missing evidence, and suggested checks.</p>
+<h2 id="review-the-engineering-choices">Review the engineering choices</h2>
+<ul>
+<li><a href="ARCHITECTURE.html">Architecture</a>: separate modules, atomic transactions, replay, and stable identities.</li>
+<li><a href="FORMATS.html">Formats and source validation</a>: supported inputs and what declared source fields can establish.</li>
+<li><a href="../SECURITY.html">Security model</a>: loopback-only operation, plaintext data, and no authentication.</li>
+<li><a href="VALIDATION.html">Validation</a>: tests actually executed, plus unverified environments.</li>
+<li><a href="REVIEW_NOTES.html">Review follow-up</a>: previous findings compared with the current implementation.</li>
+<li><a href="PORTFOLIO.html">Portfolio presentation</a>: a short English description and a Turkish presentation narrative.</li>
+</ul>
+<p>This project demonstrates file-based analysis and explainable rule behavior. It does not measure production detection accuracy or establish its author's employment or learning history.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

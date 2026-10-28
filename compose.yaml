@@ -1,0 +1,20 @@
+services:
+  logsentinel:
+    build: .
+    ports:
+      - "127.0.0.1:${LOGSENTINEL_PORT:-8765}:8000"
+    volumes:
+      - logsentinel-data:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    mem_limit: 512m
+
+volumes:
+  logsentinel-data:

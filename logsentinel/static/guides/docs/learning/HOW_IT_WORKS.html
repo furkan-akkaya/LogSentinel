@@ -1,0 +1,231 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>How LogSentinel works · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="how-logsentinel-works">How LogSentinel works</h1>
+<p><a href="../INDEX.html">Project guide</a> · <a href="../ARCHITECTURE.html">Technical design</a></p>
+<p>LogSentinel turns authentication records into explainable review signals. I use one local service so visitors can reproduce the complete flow without building a lab.</p>
+<p><img src="../diagrams/pipeline.svg" alt="Raw record to investigation" /></p>
+<h2 id="1-start-with-actual-source-records">1. Start with actual source records</h2>
+<p>Linux example, from the SSH success-after-failures scenario:</p>
+<pre><code class="language-text">2026-10-26T10:40:00Z app-02 sshd[6000]: Failed password for devops from 198.51.100.24 port 52000 ssh2
+</code></pre>
+<p>Windows example, from the repeated-logon-failures scenario:</p>
+<pre><code class="language-json">{
+  &quot;System&quot;: {
+    &quot;EventID&quot;: 4625,
+    &quot;TimeCreated&quot;: {
+      &quot;SystemTime&quot;: &quot;2026-10-26T10:25:00Z&quot;
+    },
+    &quot;Computer&quot;: &quot;dc-01&quot;,
+    &quot;EventRecordID&quot;: &quot;10000&quot;,
+    &quot;Channel&quot;: &quot;Security&quot;
+  },
+  &quot;EventData&quot;: {
+    &quot;TargetUserName&quot;: &quot;svc_backup&quot;,
+    &quot;TargetDomainName&quot;: &quot;LAB&quot;,
+    &quot;IpAddress&quot;: &quot;192.0.2.86&quot;,
+    &quot;LogonType&quot;: &quot;10&quot;
+  }
+}
+</code></pre>
+<p>Both are synthetic records from the distributed samples. They are not evidence of a real incident. See <a href="../../_source/samples/linux-auth.log.html">Linux sample</a> and <a href="../../_source/samples/windows-security.json.html">Windows sample</a>.</p>
+<h2 id="2-parse-fields-before-drawing-conclusions">2. Parse fields before drawing conclusions</h2>
+<p>The <a href="../../_source/logsentinel/parsers.py.html">Linux parser</a> recognizes the timestamp, host, daemon, outcome, method, account, address, PID, and source port. It treats unrelated daemon messages as ignored records.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Linux source fragment</th>
+<th>Normalized destination</th>
+<th>Actual value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prefix timestamp</td>
+<td><code>timestamp</code></td>
+<td><code>2026-10-26T10:40:00.000000Z</code></td>
+</tr>
+<tr>
+<td>Host after timestamp</td>
+<td><code>host</code></td>
+<td><code>app-02</code></td>
+</tr>
+<tr>
+<td><code>Failed password</code></td>
+<td><code>event_type</code>, <code>metadata.method</code></td>
+<td><code>ssh_failure</code>, <code>password</code></td>
+</tr>
+<tr>
+<td><code>for devops</code></td>
+<td><code>user</code></td>
+<td><code>devops</code></td>
+</tr>
+<tr>
+<td><code>from 198.51.100.24</code></td>
+<td><code>source_ip</code></td>
+<td><code>198.51.100.24</code></td>
+</tr>
+<tr>
+<td><code>sshd[6000]</code>, <code>port 52000</code></td>
+<td><code>metadata.pid</code>, <code>metadata.source_port</code></td>
+<td><code>6000</code>, <code>52000</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>The <a href="../../_source/logsentinel/parsers.py.html">Windows parser</a> reads named fields instead of localized message text. Explicit channel and provider values must match the Security contract.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Windows source field</th>
+<th>Normalized destination</th>
+<th>Actual value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>System.TimeCreated.SystemTime</code></td>
+<td><code>timestamp</code></td>
+<td><code>2026-10-26T10:25:00.000000Z</code></td>
+</tr>
+<tr>
+<td><code>System.Computer</code></td>
+<td><code>host</code></td>
+<td><code>dc-01</code></td>
+</tr>
+<tr>
+<td><code>System.EventID</code> = 4625</td>
+<td><code>event_type</code></td>
+<td><code>windows_failure</code></td>
+</tr>
+<tr>
+<td><code>EventData.TargetUserName</code></td>
+<td><code>user</code></td>
+<td><code>svc_backup</code></td>
+</tr>
+<tr>
+<td><code>EventData.IpAddress</code></td>
+<td><code>source_ip</code></td>
+<td><code>192.0.2.86</code></td>
+</tr>
+<tr>
+<td><code>EventData.TargetDomainName</code></td>
+<td><code>metadata.domain</code></td>
+<td><code>LAB</code></td>
+</tr>
+<tr>
+<td><code>EventData.LogonType</code></td>
+<td><code>metadata.logon_type</code></td>
+<td><code>10</code></td>
+</tr>
+<tr>
+<td><code>System.EventRecordID</code></td>
+<td><code>metadata.record_id</code></td>
+<td><code>10000</code></td>
+</tr>
+<tr>
+<td><code>System.Channel</code></td>
+<td><code>metadata.channel</code></td>
+<td><code>Security</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Microsoft's <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4625">4625 reference</a> shows the Security channel and expected provider. A 4625 is a failed logon, not necessarily a wrong password. The current normalized schema does not extract Status or SubStatus; inspect raw records if those fields exist.</p>
+<p>The actual demo omits Provider. Compatibility permits that omission, but it cannot verify the source. A file can be fabricated even when every declared field matches. See <a href="../FORMATS.html">the source-validation contract</a>.</p>
+<h2 id="3-normalize-time-and-identity-fields">3. Normalize time and identity fields</h2>
+<p>I store UTC timestamps with fixed microsecond precision. Lexical ordering then agrees with event-time ordering across timezone offsets.</p>
+<p>For the same Linux instant, <code>2026-10-26T13:40:00+03:00</code> and <code>2026-10-26T10:40:00Z</code> normalize to <code>2026-10-26T10:40:00.000000Z</code>. The offset form is an equivalent representation, not another demo record.</p>
+<p>Yearless syslog uses the explicit import year and fixed timezone offset. It cannot infer a New Year boundary or daylight-saving transition. Split such files before import.</p>
+<p>IP parsing canonicalizes IPv6 and converts IPv4-mapped IPv6 to IPv4. Invalid SSH IPs reject the record. Missing Windows IPs remain null and cannot join a network correlation group.</p>
+<p>Linux usernames retain case. Windows matching case-folds account, host, and domain names. The stored Windows account/domain spelling remains available for inspection. Sudo uses the invoking user, not the PAM target account.</p>
+<p>Actual normalized Linux event:</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;3b9fef79c1d8d48835c4ee66b1a113f80b46632d18c094ca4da2298bf2dcf99f&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-26T10:40:00.000000Z&quot;,
+  &quot;source&quot;: &quot;linux&quot;,
+  &quot;event_type&quot;: &quot;ssh_failure&quot;,
+  &quot;host&quot;: &quot;app-02&quot;,
+  &quot;user&quot;: &quot;devops&quot;,
+  &quot;source_ip&quot;: &quot;198.51.100.24&quot;,
+  &quot;metadata&quot;: {
+    &quot;pid&quot;: &quot;6000&quot;,
+    &quot;method&quot;: &quot;password&quot;,
+    &quot;source_port&quot;: &quot;52000&quot;
+  }
+}
+</code></pre>
+<p>Actual normalized Windows event:</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;6bb005c60c226288fef11682a946243c9d3f9b71dc6191b6bca769d08e46fc80&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-26T10:25:00.000000Z&quot;,
+  &quot;source&quot;: &quot;windows&quot;,
+  &quot;event_type&quot;: &quot;windows_failure&quot;,
+  &quot;host&quot;: &quot;dc-01&quot;,
+  &quot;user&quot;: &quot;svc_backup&quot;,
+  &quot;source_ip&quot;: &quot;192.0.2.86&quot;,
+  &quot;metadata&quot;: {
+    &quot;event_id&quot;: 4625,
+    &quot;record_id&quot;: &quot;10000&quot;,
+    &quot;channel&quot;: &quot;Security&quot;,
+    &quot;domain&quot;: &quot;LAB&quot;,
+    &quot;logon_type&quot;: &quot;10&quot;
+  }
+}
+</code></pre>
+<h2 id="4-identify-duplicates">4. Identify duplicates</h2>
+<p><code>Event.id</code> hashes normalized time, source, type, host, user, IP, and metadata using SHA-256. Raw formatting and upload filename do not participate.</p>
+<p>Equivalent Windows XML and JSON exports produce the same ID when their normalized fields match. Provider validation does not add provider metadata to the identity. This preserves compatibility with previously imported valid events.</p>
+<p><strong>This hash is a deduplication key, not source authentication, a digital signature, or proof that an imported file was unchanged.</strong> Identical normalized records can collapse even if they describe separate attempts. Missing optional fields across exports can prevent deduplication.</p>
+<p>The first imported raw representation and filename are retained. LogSentinel does not maintain a multi-file provenance history.</p>
+<h2 id="5-commit-events-and-detections-together">5. Commit events and detections together</h2>
+<p><a href="../../_source/logsentinel/storage.py.html">SQLite storage</a> uses the event ID as a primary key. <code>INSERT OR IGNORE</code> prevents a duplicate event from creating a second row.</p>
+<p>An import transaction inserts events, checks the local event cap, reanalyzes stored data, updates alerts, and commits. Failure rolls back the operation. WAL permits reads while writes serialize.</p>
+<p>The measured demo contains <strong>85 unique events</strong>. A second import reports <strong>85 duplicates</strong>, <strong>zero inserted events</strong>, and <strong>five total alerts</strong>. It does not add five more alerts.</p>
+<h2 id="6-correlate-using-event-time">6. Correlate using event time</h2>
+<p>Event time comes from the log. Import time is when the file reaches the application. I use event time so files loaded out of order can still form the same sequence.</p>
+<p>The schema does not store a separate import timestamp. It stores the display filename. The dashboard's latest-event label does not describe upload recency.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Event family</th>
+<th>Effective correlation key</th>
+<th>Why these fields matter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSH</td>
+<td>Host + source IP + user</td>
+<td>Keep different destinations, origins, and accounts separate</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td>Host + IP + user + domain + logon type</td>
+<td>Separate authentication contexts with similar account names</td>
+</tr>
+<tr>
+<td>Sudo</td>
+<td>Host + invoking user + terminal</td>
+<td>Keep distinct local sessions separate</td>
+</tr>
+</tbody>
+</table></div>
+<p>Missing key fields do not join a shared &quot;unknown&quot; identity. That avoids false joins but reduces coverage for incomplete data.</p>
+<p>The <a href="../../_source/logsentinel/detection.py.html">detection engine</a> sorts events and applies a bounded event-time window. Failures at the lower boundary qualify. Success rules require strictly earlier failures. They do not reuse consumed failures for every later success.</p>
+<p><a href="../INDEX.html">Five scenario documents</a> show actual evidence, thresholds, normal explanations, and coverage gaps. Spraying across accounts and attempts distributed across IPs are not aggregated.</p>
+<h2 id="7-explain-the-alert-and-inspect-evidence">7. Explain the alert and inspect evidence</h2>
+<p>The SSH example belongs to four failures and one later success. The success threshold is three failures; the separate failure-only threshold is five. It produces one critical success-after-failures alert with five evidence records.</p>
+<p>The Windows example belongs to six matching 4625 records. The failure threshold is five. It produces one high-severity alert with six evidence records.</p>
+<p>Alert severity is a rule label, not a confidence score. <a href="../../_source/logsentinel/guidance.py.html">Investigation guidance</a> uses actual evidence counts and parameters stored with the alert. Legacy alerts use the config that was committed with their generation.</p>
+<p>Open <strong>Security Alerts</strong>, select a detection, review the matching identity and parameters, then choose <strong>Inspect record</strong>. The raw and normalized record remain available. Analyst checks are suggestions; the app does not perform account validation or post-login analysis.</p>
+<h2 id="8-reanalyze-without-implying-an-audit-history">8. Reanalyze without implying an audit history</h2>
+<p>An import with new events replays the stored dataset. A settings change replays it in one transaction. A duplicate-only import skips replay because no event changed.</p>
+<p>Existing investigation status survives when the alert ID remains present. Changed anchors or temporarily removed alerts can lose their status. Restoring thresholds can recreate an alert as <code>new</code>, even if the ID returns. There is no permanent case history.</p>
+<h2 id="code-and-reproducible-evidence">Code and reproducible evidence</h2>
+<ul>
+<li><a href="../../_source/logsentinel/parsers.py.html">Parsers and event ID</a></li>
+<li><a href="../../_source/logsentinel/detection.py.html">Correlation and rule parameters</a></li>
+<li><a href="../../_source/logsentinel/storage.py.html">SQLite transactions</a></li>
+<li><a href="../../_source/logsentinel/app.py.html">HTTP API</a></li>
+<li><a href="../../_source/tests/test_parsers.py.html">Parser tests</a> and <a href="../../_source/tests/test_windows_source.py.html">Windows source tests</a></li>
+<li><a href="../../_source/tests/test_detection.py.html">Correlation tests</a> and <a href="../../_source/tests/test_api.py.html">API tests</a></li>
+<li><a href="../../_source/tools/verify_examples.py.html">Documented-example verifier</a> and <a href="../../_source/tests/test_examples.py.html">example tests</a></li>
+</ul>
+<p>From the repository root, run <code>python tools/verify_examples.py</code> and <code>python -m pytest</code>. Both use disposable test databases. The <a href="../reports/SSH_CASE_STUDY.html">SSH case study</a> separates observations from hypotheses.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

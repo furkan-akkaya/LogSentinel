@@ -1,0 +1,68 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Supported log formats · LogSentinel</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="supported-log-formats">Supported log formats</h1>
+<p>All uploads must be UTF-8 (a UTF-8 BOM is accepted). Maximum file size: 5 MiB. The importer reports accepted, duplicate, rejected, and ignored records. At most ten record-level errors are returned; raw rejected text is not echoed into errors. Valid records in a partially malformed file are accepted. Invalid whole XML documents are rejected atomically.</p>
+<h2 id="linux-syslog">Linux syslog</h2>
+<p>Recognized examples:</p>
+<pre><code class="language-text">Oct 26 08:00:00 edge-01 sshd[1234]: Failed password for invalid user admin from 203.0.113.42 port 50100 ssh2
+2026-10-26T08:01:00+00:00 edge-01 sshd[1235]: Accepted publickey for deploy from 10.0.0.12 port 50101 ssh2
+2026-10-26T08:02:00Z app-02 sudo[3456]: pam_unix(sudo:auth): authentication failure; logname=analyst uid=1001 euid=0 tty=/dev/pts/1 ruser=analyst rhost= user=root
+</code></pre>
+<p>The parser supports an optional syslog priority prefix <code>&lt;N&gt;</code>. It expects a host and <code>sshd</code> or <code>sudo</code> daemon prefix; PIDs are optional. Supported SSH methods are <code>password</code>, <code>publickey</code>, and <code>keyboard-interactive</code> (including <code>/pam</code>). Invalid SSH IPs reject the record. Other daemon records and unrecognized messages from the supported daemons are ignored rather than treated as authentication failures.</p>
+<p>RFC3164 omits year and timezone. Supply the correct year and fixed offset in the import dialog. Offset defaults to <code>+00:00</code>. A year applies to every yearless record in that file. Split December/January logs and daylight-saving transitions into separate imports. ISO timestamps retain their embedded offset; naive ISO timestamps use the import offset. All stored times normalize to UTC.</p>
+<p>The parser is intentionally format-specific. Journald JSON, RFC5424 structured data, custom collector prefixes, localized text and all possible Linux distributions are not supported.</p>
+<h2 id="windows-event-xml">Windows Event XML</h2>
+<p>For 4624/4625, an explicitly supplied <code>Channel</code> must be <code>Security</code>. An explicitly supplied provider name must be <code>Microsoft-Windows-Security-Auditing</code>. The provider GUID must be <code>{54849625-5478-4994-A5BA-3E3B0328C30D}</code> when supplied. XML <code>Provider</code> attributes reach the same validation as JSON.</p>
+<p>String comparisons accept surrounding whitespace and ignore case. GUIDs accept standard braced or unbraced UUID text. When both name and GUID exist, both must match. Every explicit alias is checked, including contradictory duplicate name aliases. Empty, null, malformed, or unrelated explicit fields are rejected and reported as source rejections.</p>
+<p>For documented simplified exports, an <strong>absent</strong> Channel or Provider is accepted. Missing Channel normalizes to <code>Security</code> for compatibility. That default is not evidence that the source actually used the Security channel. The raw record is the place to inspect missing declarations.</p>
+<p>Validation checks declarations, not provenance. It does not verify signatures or contact Windows. A forged file can contain the expected fields. Existing stored records are not deleted or reparsed by this update; this policy applies to new imports.</p>
+<p>The exact values appear in the official <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4624">4624 XML example</a> and <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4625">4625 XML example</a>.</p>
+<p>Use an <code>Event</code> element or <code>Events</code> wrapper with <code>Event</code> children. The standard Windows event namespace is supported. Required named fields:</p>
+<pre><code class="language-xml">&lt;Events xmlns=&quot;http://schemas.microsoft.com/win/2004/08/events/event&quot;&gt;
+  &lt;Event&gt;
+    &lt;System&gt;
+      &lt;Provider Name=&quot;Microsoft-Windows-Security-Auditing&quot; Guid=&quot;{54849625-5478-4994-A5BA-3E3B0328C30D}&quot;/&gt;
+      &lt;EventID&gt;4625&lt;/EventID&gt;
+      &lt;TimeCreated SystemTime=&quot;2026-10-26T08:00:00.0000000Z&quot;/&gt;
+      &lt;EventRecordID&gt;10001&lt;/EventRecordID&gt;
+      &lt;Computer&gt;ws-finance&lt;/Computer&gt;
+      &lt;Channel&gt;Security&lt;/Channel&gt;
+    &lt;/System&gt;
+    &lt;EventData&gt;
+      &lt;Data Name=&quot;TargetUserName&quot;&gt;j.morgan&lt;/Data&gt;
+      &lt;Data Name=&quot;TargetDomainName&quot;&gt;LAB&lt;/Data&gt;
+      &lt;Data Name=&quot;IpAddress&quot;&gt;203.0.113.77&lt;/Data&gt;
+      &lt;Data Name=&quot;LogonType&quot;&gt;10&lt;/Data&gt;
+    &lt;/EventData&gt;
+  &lt;/Event&gt;
+&lt;/Events&gt;
+</code></pre>
+<p>To export on Windows using PowerShell (appropriate Security log read permission may be required):</p>
+<pre><code class="language-powershell">$events = Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4624,4625} -MaxEvents 5000
+$xml = '&lt;Events&gt;' + (($events | ForEach-Object { $_.ToXml() }) -join &quot;`n&quot;) + '&lt;/Events&gt;'
+[System.IO.File]::WriteAllText((Join-Path $PWD 'security.xml'), $xml, [System.Text.UTF8Encoding]::new($false))
+</code></pre>
+<p>This is an export command for your Windows machine, not host access requested by LogSentinel. The command is documented, not executed or validated on Windows during this development session. Do not upload a binary <code>.evtx</code> file. XML raw records are preserved as a semantic XML serialization with possible namespace-prefix changes, rather than original byte slices.</p>
+<p>Field meanings follow <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4624">Microsoft 4624 documentation</a> and <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4625">Microsoft 4625 documentation</a>. Missing IP information is normal in some authentication contexts. The app stores these events but does not invent network identity.</p>
+<h2 id="windows-json--ndjson">Windows JSON / NDJSON</h2>
+<p>The equivalent object is:</p>
+<pre><code class="language-json">{
+  &quot;System&quot;: {
+    &quot;EventID&quot;: 4625,
+    &quot;Provider&quot;: {&quot;Name&quot;: &quot;Microsoft-Windows-Security-Auditing&quot;, &quot;Guid&quot;: &quot;{54849625-5478-4994-A5BA-3E3B0328C30D}&quot;},
+    &quot;TimeCreated&quot;: {&quot;SystemTime&quot;: &quot;2026-10-26T08:00:00Z&quot;},
+    &quot;Computer&quot;: &quot;ws-finance&quot;,
+    &quot;EventRecordID&quot;: &quot;10001&quot;,
+    &quot;Channel&quot;: &quot;Security&quot;
+  },
+  &quot;EventData&quot;: {
+    &quot;TargetUserName&quot;: &quot;j.morgan&quot;,
+    &quot;TargetDomainName&quot;: &quot;LAB&quot;,
+    &quot;IpAddress&quot;: &quot;203.0.113.77&quot;,
+    &quot;LogonType&quot;: &quot;10&quot;
+  }
+}
+</code></pre>
+<p>Accepted envelopes are one object, a JSON array, <code>{&quot;Events&quot;: [...]}</code>, <code>{&quot;Event&quot;: {...}}</code>, or one object per line. Flattened records can place <code>EventID</code>, <code>TimeCreated</code>, <code>Computer</code>, and named EventData fields at the top level. Aliases <code>Id</code>, <code>Timestamp</code>, <code>MachineName</code> and <code>RecordId</code> are accepted for their respective System fields. A named <code>EventData.Data</code> list with <code>Name</code>/<code>@Name</code> and <code>Value</code>/<code>#text</code> is also supported.</p>
+<p>Provider may be a name string or an object with <code>Name</code>/<code>@Name</code> and <code>Guid</code>/<code>@Guid</code>. <code>ProviderName</code> and <code>ProviderGuid</code> are accepted aliases in the System object or flattened form. Unknown provider-object fields without a recognized name or GUID are rejected. Other event IDs remain ignored; this source contract concerns supported authentication events.</p>
+<p>An arbitrary PowerShell <code>Get-WinEvent | ConvertTo-Json</code> export is <strong>not</strong> the supported contract: unnamed <code>Properties</code> arrays are ambiguous across event versions. Export XML or transform to the named structure above.</p>
+<p>EventID, TimeCreated and Computer are required for a supported authentication event. Other event IDs are ignored. Missing user/IP/domain/logon type does not prevent storage, but prevents correlation. Timestamps may contain sub-microsecond precision; storage truncates to Python microseconds. Without record IDs, identical normalized events inside that precision may deduplicate.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

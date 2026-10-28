@@ -1,0 +1,527 @@
+<Events xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T08:00:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9000</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T08:09:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9001</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T08:18:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9002</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T08:27:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9003</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T08:36:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9004</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T08:45:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9005</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T08:54:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9006</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T09:03:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9007</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T09:12:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9008</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T09:21:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9009</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T09:30:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9010</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T09:39:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9011</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T09:48:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9012</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T09:57:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9013</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:06:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9014</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:15:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9015</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:24:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9016</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4625</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:25:00Z" />
+      <Computer>dc-01</Computer>
+      <EventRecordID>10000</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">svc_backup</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">192.0.2.86</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4625</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:25:24Z" />
+      <Computer>dc-01</Computer>
+      <EventRecordID>10001</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">svc_backup</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">192.0.2.86</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4625</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:25:48Z" />
+      <Computer>dc-01</Computer>
+      <EventRecordID>10002</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">svc_backup</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">192.0.2.86</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4625</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:26:12Z" />
+      <Computer>dc-01</Computer>
+      <EventRecordID>10003</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">svc_backup</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">192.0.2.86</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4625</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:26:36Z" />
+      <Computer>dc-01</Computer>
+      <EventRecordID>10004</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">svc_backup</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">192.0.2.86</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4625</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:27:00Z" />
+      <Computer>dc-01</Computer>
+      <EventRecordID>10005</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">svc_backup</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">192.0.2.86</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:33:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9017</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:42:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9018</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T10:51:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9019</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4625</EventID>
+      <TimeCreated SystemTime="2026-10-26T11:00:00Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>11000</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">203.0.113.77</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T11:00:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9020</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4625</EventID>
+      <TimeCreated SystemTime="2026-10-26T11:00:22Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>11001</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">203.0.113.77</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4625</EventID>
+      <TimeCreated SystemTime="2026-10-26T11:00:44Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>11002</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">203.0.113.77</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4625</EventID>
+      <TimeCreated SystemTime="2026-10-26T11:01:06Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>11003</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">203.0.113.77</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T11:02:00Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>11010</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">203.0.113.77</Data>
+      <Data Name="LogonType">10</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T11:09:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9021</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T11:18:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9022</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+  <Event>
+    <System>
+      <EventID>4624</EventID>
+      <TimeCreated SystemTime="2026-10-26T11:27:05Z" />
+      <Computer>ws-finance</Computer>
+      <EventRecordID>9023</EventRecordID>
+      <Channel>Security</Channel>
+    </System>
+    <EventData>
+      <Data Name="TargetUserName">j.morgan</Data>
+      <Data Name="TargetDomainName">LAB</Data>
+      <Data Name="IpAddress">10.0.0.18</Data>
+      <Data Name="LogonType">3</Data>
+    </EventData>
+  </Event>
+</Events>

@@ -1,0 +1,592 @@
+{
+  "first_import": {
+    "inserted": 85,
+    "duplicates": 0,
+    "alerts_total": 5
+  },
+  "second_import": {
+    "inserted": 0,
+    "duplicates": 85,
+    "alerts_total": 5
+  },
+  "scenarios": {
+    "ssh_brute_force": {
+      "summary": {
+        "id": "c84d3c72e30c5b158ecf14f139618cfcd8d84a3673be7e6580b162a4f04359c3",
+        "rule": "ssh_brute_force",
+        "title": "SSH password guessing",
+        "severity": "high",
+        "first_seen": "2026-10-26T10:10:00.000000Z",
+        "last_seen": "2026-10-26T10:11:48.000000Z",
+        "evidence_count": 7,
+        "failure_count": 7,
+        "success_count": 0,
+        "identity": {
+          "host": "edge-01",
+          "source_ip": "203.0.113.42",
+          "user": "admin"
+        },
+        "parameters": {
+          "threshold": 5,
+          "window_seconds": 300
+        }
+      },
+      "events": [
+        {
+          "id": "c2dc05fabcbe16aa394623cec7253de7ab8fa9a07f98c3b8e6e55efd8cd5dbed",
+          "timestamp": "2026-10-26T10:10:00.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "edge-01",
+          "user": "admin",
+          "source_ip": "203.0.113.42",
+          "raw": "2026-10-26T10:10:00Z edge-01 sshd[5000]: Failed password for invalid user admin from 203.0.113.42 port 51000 ssh2",
+          "metadata": {
+            "pid": "5000",
+            "method": "password",
+            "source_port": "51000"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "651d4536d32fdae863c2344a72361256f50b9bcb1a03e5390997e42cd05571b6",
+          "timestamp": "2026-10-26T10:10:18.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "edge-01",
+          "user": "admin",
+          "source_ip": "203.0.113.42",
+          "raw": "2026-10-26T10:10:18Z edge-01 sshd[5001]: Failed password for invalid user admin from 203.0.113.42 port 51001 ssh2",
+          "metadata": {
+            "pid": "5001",
+            "method": "password",
+            "source_port": "51001"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "cd9823eff5f1cd799497ac3c9a8f344986090ff81d2775affdbd5378988af5a5",
+          "timestamp": "2026-10-26T10:10:36.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "edge-01",
+          "user": "admin",
+          "source_ip": "203.0.113.42",
+          "raw": "2026-10-26T10:10:36Z edge-01 sshd[5002]: Failed password for invalid user admin from 203.0.113.42 port 51002 ssh2",
+          "metadata": {
+            "pid": "5002",
+            "method": "password",
+            "source_port": "51002"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "411bdfa2f0c96a06a7a3978029f46301b5116fcde172b3b8c1b344de0d3277aa",
+          "timestamp": "2026-10-26T10:10:54.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "edge-01",
+          "user": "admin",
+          "source_ip": "203.0.113.42",
+          "raw": "2026-10-26T10:10:54Z edge-01 sshd[5003]: Failed password for invalid user admin from 203.0.113.42 port 51003 ssh2",
+          "metadata": {
+            "pid": "5003",
+            "method": "password",
+            "source_port": "51003"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "4de637a8bb806f20c4a2486b2004ec613cc4f4178d0bb414f4a81fafe1d9b9e5",
+          "timestamp": "2026-10-26T10:11:12.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "edge-01",
+          "user": "admin",
+          "source_ip": "203.0.113.42",
+          "raw": "2026-10-26T10:11:12Z edge-01 sshd[5004]: Failed password for invalid user admin from 203.0.113.42 port 51004 ssh2",
+          "metadata": {
+            "pid": "5004",
+            "method": "password",
+            "source_port": "51004"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "864be6cd3f70e506fa7d42ca9830bce425b8e34d1fc475077bb2e06d0321cb81",
+          "timestamp": "2026-10-26T10:11:30.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "edge-01",
+          "user": "admin",
+          "source_ip": "203.0.113.42",
+          "raw": "2026-10-26T10:11:30Z edge-01 sshd[5005]: Failed password for invalid user admin from 203.0.113.42 port 51005 ssh2",
+          "metadata": {
+            "pid": "5005",
+            "method": "password",
+            "source_port": "51005"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "2fa09dd6d43f991fb26663dd8d1dd09e04871580392e4e73aa9e82ae999072eb",
+          "timestamp": "2026-10-26T10:11:48.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "edge-01",
+          "user": "admin",
+          "source_ip": "203.0.113.42",
+          "raw": "2026-10-26T10:11:48Z edge-01 sshd[5006]: Failed password for invalid user admin from 203.0.113.42 port 51006 ssh2",
+          "metadata": {
+            "pid": "5006",
+            "method": "password",
+            "source_port": "51006"
+          },
+          "filename": "bundled synthetic demo"
+        }
+      ]
+    },
+    "ssh_success_after_failures": {
+      "summary": {
+        "id": "a93aea77b0912d5f3e91239bd39acaa60d9dbc9c4634d584f109dfcb57a57be5",
+        "rule": "ssh_success_after_failures",
+        "title": "SSH success after failures",
+        "severity": "critical",
+        "first_seen": "2026-10-26T10:40:00.000000Z",
+        "last_seen": "2026-10-26T10:41:30.000000Z",
+        "evidence_count": 5,
+        "failure_count": 4,
+        "success_count": 1,
+        "identity": {
+          "host": "app-02",
+          "source_ip": "198.51.100.24",
+          "user": "devops"
+        },
+        "parameters": {
+          "threshold": 3,
+          "window_seconds": 300
+        }
+      },
+      "events": [
+        {
+          "id": "3b9fef79c1d8d48835c4ee66b1a113f80b46632d18c094ca4da2298bf2dcf99f",
+          "timestamp": "2026-10-26T10:40:00.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "app-02",
+          "user": "devops",
+          "source_ip": "198.51.100.24",
+          "raw": "2026-10-26T10:40:00Z app-02 sshd[6000]: Failed password for devops from 198.51.100.24 port 52000 ssh2",
+          "metadata": {
+            "pid": "6000",
+            "method": "password",
+            "source_port": "52000"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "8e1c7e7e3d38008222873f58464946790c16da3a4224094725d7360f04889e65",
+          "timestamp": "2026-10-26T10:40:20.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "app-02",
+          "user": "devops",
+          "source_ip": "198.51.100.24",
+          "raw": "2026-10-26T10:40:20Z app-02 sshd[6001]: Failed password for devops from 198.51.100.24 port 52001 ssh2",
+          "metadata": {
+            "pid": "6001",
+            "method": "password",
+            "source_port": "52001"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "845d9ffa43464040f9069fcb0571a1f1ac2aee8cecca6cc6668ea10ea4cef0c1",
+          "timestamp": "2026-10-26T10:40:40.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "app-02",
+          "user": "devops",
+          "source_ip": "198.51.100.24",
+          "raw": "2026-10-26T10:40:40Z app-02 sshd[6002]: Failed password for devops from 198.51.100.24 port 52002 ssh2",
+          "metadata": {
+            "pid": "6002",
+            "method": "password",
+            "source_port": "52002"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "d0d9e69b1272117e5e8c3b8ec2ee2234b93c0bf4220052e3dcc0f472507f8944",
+          "timestamp": "2026-10-26T10:41:00.000000Z",
+          "source": "linux",
+          "event_type": "ssh_failure",
+          "host": "app-02",
+          "user": "devops",
+          "source_ip": "198.51.100.24",
+          "raw": "2026-10-26T10:41:00Z app-02 sshd[6003]: Failed password for devops from 198.51.100.24 port 52003 ssh2",
+          "metadata": {
+            "pid": "6003",
+            "method": "password",
+            "source_port": "52003"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "776fd8b704262268c66efe33c0a66ac7843676fc2eefe28efe5a500d23ccf5c7",
+          "timestamp": "2026-10-26T10:41:30.000000Z",
+          "source": "linux",
+          "event_type": "ssh_success",
+          "host": "app-02",
+          "user": "devops",
+          "source_ip": "198.51.100.24",
+          "raw": "2026-10-26T10:41:30Z app-02 sshd[6010]: Accepted password for devops from 198.51.100.24 port 52010 ssh2",
+          "metadata": {
+            "pid": "6010",
+            "method": "password",
+            "source_port": "52010"
+          },
+          "filename": "bundled synthetic demo"
+        }
+      ]
+    },
+    "sudo_failures": {
+      "summary": {
+        "id": "534b87a7da7d4e2289328d35bbfc5aa902aac433cf96dad27c0a9979c2d977c2",
+        "rule": "sudo_failures",
+        "title": "Repeated sudo authentication failures",
+        "severity": "medium",
+        "first_seen": "2026-10-26T11:15:00.000000Z",
+        "last_seen": "2026-10-26T11:16:15.000000Z",
+        "evidence_count": 4,
+        "failure_count": 4,
+        "success_count": 0,
+        "identity": {
+          "host": "app-02",
+          "user": "analyst",
+          "terminal": "/dev/pts/1"
+        },
+        "parameters": {
+          "threshold": 3,
+          "window_seconds": 300
+        }
+      },
+      "events": [
+        {
+          "id": "0ca9be86b0df04bd21eedfaa421c4acf3b9d0494ae3e3ebad3885040f6ec7c1c",
+          "timestamp": "2026-10-26T11:15:00.000000Z",
+          "source": "linux",
+          "event_type": "sudo_failure",
+          "host": "app-02",
+          "user": "analyst",
+          "source_ip": null,
+          "raw": "2026-10-26T11:15:00Z app-02 sudo[7000]: pam_unix(sudo:auth): authentication failure; logname=analyst uid=1001 euid=0 tty=/dev/pts/1 ruser=analyst rhost= user=root",
+          "metadata": {
+            "pid": "7000",
+            "target_user": "root",
+            "tty": "/dev/pts/1"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "807f116a1a93ba8be045f0e8f60ccc145f24eefc0a1f8530f29ca616a5397cad",
+          "timestamp": "2026-10-26T11:15:25.000000Z",
+          "source": "linux",
+          "event_type": "sudo_failure",
+          "host": "app-02",
+          "user": "analyst",
+          "source_ip": null,
+          "raw": "2026-10-26T11:15:25Z app-02 sudo[7001]: pam_unix(sudo:auth): authentication failure; logname=analyst uid=1001 euid=0 tty=/dev/pts/1 ruser=analyst rhost= user=root",
+          "metadata": {
+            "pid": "7001",
+            "target_user": "root",
+            "tty": "/dev/pts/1"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "a72bd9a96b5e5623dba69d810ed0f7b19db81416362978c8758767ce2ca1dbe9",
+          "timestamp": "2026-10-26T11:15:50.000000Z",
+          "source": "linux",
+          "event_type": "sudo_failure",
+          "host": "app-02",
+          "user": "analyst",
+          "source_ip": null,
+          "raw": "2026-10-26T11:15:50Z app-02 sudo[7002]: pam_unix(sudo:auth): authentication failure; logname=analyst uid=1001 euid=0 tty=/dev/pts/1 ruser=analyst rhost= user=root",
+          "metadata": {
+            "pid": "7002",
+            "target_user": "root",
+            "tty": "/dev/pts/1"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "ff08baf0759161382abb1149727a8cb144328355701b5814f76bd2543853e78b",
+          "timestamp": "2026-10-26T11:16:15.000000Z",
+          "source": "linux",
+          "event_type": "sudo_failure",
+          "host": "app-02",
+          "user": "analyst",
+          "source_ip": null,
+          "raw": "2026-10-26T11:16:15Z app-02 sudo[7003]: pam_unix(sudo:auth): authentication failure; logname=analyst uid=1001 euid=0 tty=/dev/pts/1 ruser=analyst rhost= user=root",
+          "metadata": {
+            "pid": "7003",
+            "target_user": "root",
+            "tty": "/dev/pts/1"
+          },
+          "filename": "bundled synthetic demo"
+        }
+      ]
+    },
+    "windows_brute_force": {
+      "summary": {
+        "id": "01b531d03e87a53f3999f50c09434b928c018749822c1e72b74382e084e75303",
+        "rule": "windows_brute_force",
+        "title": "Windows repeated logon failures",
+        "severity": "high",
+        "first_seen": "2026-10-26T10:25:00.000000Z",
+        "last_seen": "2026-10-26T10:27:00.000000Z",
+        "evidence_count": 6,
+        "failure_count": 6,
+        "success_count": 0,
+        "identity": {
+          "host": "dc-01",
+          "source_ip": "192.0.2.86",
+          "user": "svc_backup",
+          "domain": "lab",
+          "logon_type": "10"
+        },
+        "parameters": {
+          "threshold": 5,
+          "window_seconds": 300
+        }
+      },
+      "events": [
+        {
+          "id": "6bb005c60c226288fef11682a946243c9d3f9b71dc6191b6bca769d08e46fc80",
+          "timestamp": "2026-10-26T10:25:00.000000Z",
+          "source": "windows",
+          "event_type": "windows_failure",
+          "host": "dc-01",
+          "user": "svc_backup",
+          "source_ip": "192.0.2.86",
+          "raw": "{\"System\": {\"EventID\": 4625, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T10:25:00Z\"}, \"Computer\": \"dc-01\", \"EventRecordID\": \"10000\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"svc_backup\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"192.0.2.86\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4625,
+            "record_id": "10000",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "9dda10f2d678e3f0accda8052ac36916e6c887a1b025ea5492e4f8afd9f38275",
+          "timestamp": "2026-10-26T10:25:24.000000Z",
+          "source": "windows",
+          "event_type": "windows_failure",
+          "host": "dc-01",
+          "user": "svc_backup",
+          "source_ip": "192.0.2.86",
+          "raw": "{\"System\": {\"EventID\": 4625, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T10:25:24Z\"}, \"Computer\": \"dc-01\", \"EventRecordID\": \"10001\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"svc_backup\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"192.0.2.86\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4625,
+            "record_id": "10001",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "39466f9b3ef91299d6abfb5290a0022624e93727e8bc3ac022dc9b64e8a03f07",
+          "timestamp": "2026-10-26T10:25:48.000000Z",
+          "source": "windows",
+          "event_type": "windows_failure",
+          "host": "dc-01",
+          "user": "svc_backup",
+          "source_ip": "192.0.2.86",
+          "raw": "{\"System\": {\"EventID\": 4625, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T10:25:48Z\"}, \"Computer\": \"dc-01\", \"EventRecordID\": \"10002\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"svc_backup\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"192.0.2.86\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4625,
+            "record_id": "10002",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "583a66928f3cd1cea97a6db1c95fbef0ee6008df8348a8a6d87aadcf2c4c658a",
+          "timestamp": "2026-10-26T10:26:12.000000Z",
+          "source": "windows",
+          "event_type": "windows_failure",
+          "host": "dc-01",
+          "user": "svc_backup",
+          "source_ip": "192.0.2.86",
+          "raw": "{\"System\": {\"EventID\": 4625, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T10:26:12Z\"}, \"Computer\": \"dc-01\", \"EventRecordID\": \"10003\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"svc_backup\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"192.0.2.86\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4625,
+            "record_id": "10003",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "5cb8ab31075f7409123bbea7982df1652f3a86688a2d20367645ae6eb3cd62fa",
+          "timestamp": "2026-10-26T10:26:36.000000Z",
+          "source": "windows",
+          "event_type": "windows_failure",
+          "host": "dc-01",
+          "user": "svc_backup",
+          "source_ip": "192.0.2.86",
+          "raw": "{\"System\": {\"EventID\": 4625, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T10:26:36Z\"}, \"Computer\": \"dc-01\", \"EventRecordID\": \"10004\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"svc_backup\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"192.0.2.86\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4625,
+            "record_id": "10004",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "b1da7d7db3615b8b11c266eb64ff3d0864d3b25ddaaa042f7a2a55ee605d74ac",
+          "timestamp": "2026-10-26T10:27:00.000000Z",
+          "source": "windows",
+          "event_type": "windows_failure",
+          "host": "dc-01",
+          "user": "svc_backup",
+          "source_ip": "192.0.2.86",
+          "raw": "{\"System\": {\"EventID\": 4625, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T10:27:00Z\"}, \"Computer\": \"dc-01\", \"EventRecordID\": \"10005\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"svc_backup\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"192.0.2.86\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4625,
+            "record_id": "10005",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        }
+      ]
+    },
+    "windows_success_after_failures": {
+      "summary": {
+        "id": "2070f99ef53da925047caee35b8e87e78391f143cdaa4daae9dcbb4ed4cdd013",
+        "rule": "windows_success_after_failures",
+        "title": "Windows success after failures",
+        "severity": "critical",
+        "first_seen": "2026-10-26T11:00:00.000000Z",
+        "last_seen": "2026-10-26T11:02:00.000000Z",
+        "evidence_count": 5,
+        "failure_count": 4,
+        "success_count": 1,
+        "identity": {
+          "host": "ws-finance",
+          "source_ip": "203.0.113.77",
+          "user": "j.morgan",
+          "domain": "lab",
+          "logon_type": "10"
+        },
+        "parameters": {
+          "threshold": 3,
+          "window_seconds": 300
+        }
+      },
+      "events": [
+        {
+          "id": "f5641a7f3e65ffb42d61094985c84cb4c79b02d2dfc6d7676100da3ee1f4198c",
+          "timestamp": "2026-10-26T11:00:00.000000Z",
+          "source": "windows",
+          "event_type": "windows_failure",
+          "host": "ws-finance",
+          "user": "j.morgan",
+          "source_ip": "203.0.113.77",
+          "raw": "{\"System\": {\"EventID\": 4625, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T11:00:00Z\"}, \"Computer\": \"ws-finance\", \"EventRecordID\": \"11000\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"j.morgan\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"203.0.113.77\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4625,
+            "record_id": "11000",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "ce6faafeb2166032f13f35580e26cc0dee50ef8908797d8e6ff16075421a20f1",
+          "timestamp": "2026-10-26T11:00:22.000000Z",
+          "source": "windows",
+          "event_type": "windows_failure",
+          "host": "ws-finance",
+          "user": "j.morgan",
+          "source_ip": "203.0.113.77",
+          "raw": "{\"System\": {\"EventID\": 4625, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T11:00:22Z\"}, \"Computer\": \"ws-finance\", \"EventRecordID\": \"11001\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"j.morgan\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"203.0.113.77\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4625,
+            "record_id": "11001",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "77e98e5d87290efc1458ad2cff494fa656f5fb5022ffc824bc1d5c3d5adda83c",
+          "timestamp": "2026-10-26T11:00:44.000000Z",
+          "source": "windows",
+          "event_type": "windows_failure",
+          "host": "ws-finance",
+          "user": "j.morgan",
+          "source_ip": "203.0.113.77",
+          "raw": "{\"System\": {\"EventID\": 4625, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T11:00:44Z\"}, \"Computer\": \"ws-finance\", \"EventRecordID\": \"11002\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"j.morgan\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"203.0.113.77\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4625,
+            "record_id": "11002",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "794f5ccea4d45be0ff2a65b96ebb81c90119a0d83ed049b0df2bc0f8046bbf83",
+          "timestamp": "2026-10-26T11:01:06.000000Z",
+          "source": "windows",
+          "event_type": "windows_failure",
+          "host": "ws-finance",
+          "user": "j.morgan",
+          "source_ip": "203.0.113.77",
+          "raw": "{\"System\": {\"EventID\": 4625, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T11:01:06Z\"}, \"Computer\": \"ws-finance\", \"EventRecordID\": \"11003\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"j.morgan\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"203.0.113.77\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4625,
+            "record_id": "11003",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        },
+        {
+          "id": "a2724be1c2591a246132868706baeae45f1ffc4c3f9e2800d56fd367d06f5f25",
+          "timestamp": "2026-10-26T11:02:00.000000Z",
+          "source": "windows",
+          "event_type": "windows_success",
+          "host": "ws-finance",
+          "user": "j.morgan",
+          "source_ip": "203.0.113.77",
+          "raw": "{\"System\": {\"EventID\": 4624, \"TimeCreated\": {\"SystemTime\": \"2026-10-26T11:02:00Z\"}, \"Computer\": \"ws-finance\", \"EventRecordID\": \"11010\", \"Channel\": \"Security\"}, \"EventData\": {\"TargetUserName\": \"j.morgan\", \"TargetDomainName\": \"LAB\", \"IpAddress\": \"203.0.113.77\", \"LogonType\": \"10\"}}",
+          "metadata": {
+            "event_id": 4624,
+            "record_id": "11010",
+            "channel": "Security",
+            "domain": "LAB",
+            "logon_type": "10"
+          },
+          "filename": "bundled synthetic demo"
+        }
+      ]
+    }
+  }
+}

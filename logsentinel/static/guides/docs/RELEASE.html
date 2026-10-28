@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Release preparation · LogSentinel</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="release-preparation">Release preparation</h1>
+<p>Version 1.1.0 is prepared as a local source repository. No remote repository, push, tag or GitHub release was created during development. The original v1.0.0 ZIP is preserved.</p>
+<p>Included release assets:</p>
+<ul>
+<li>Runnable FastAPI application and static UI.</li>
+<li>Dockerfile, Compose service, pinned runtime requirements and native instructions.</li>
+<li>Synthetic Linux/Windows samples, including equivalent XML and JSON exports.</li>
+<li>Automated tests and a GitHub Actions workflow.</li>
+<li>MIT license, contribution guide, security model and real browser screenshots.</li>
+<li>English portfolio description in the README.</li>
+<li>Offline project guides, five engine-verified scenarios, a synthetic SSH case study, and Turkish presentation text.</li>
+</ul>
+<p>Before publishing your own copy:</p>
+<ol>
+<li>Review the files and license attribution.</li>
+<li>Keep only synthetic logs in the repository.</li>
+<li>Run the commands in <code>docs/VALIDATION.md</code> on your target environment.</li>
+<li>Create a GitHub repository and connect it to your local checkout.</li>
+<li>Commit the reviewed source, push it, and inspect the configured CI results.</li>
+<li>Add a <code>v1.1.0</code> release only after those checks pass.</li>
+</ol>
+<p>For a fresh clone, generated guides are already included. After editing documentation or linked sources, install <code>.[docs]</code> and run <code>python tools/build_guides.py</code> before tests. Keep the checksum alongside the ZIP you distribute.</p>
+<p>Suggested repository description:</p>
+<blockquote>
+<p>Local mini SIEM for Linux and Windows authentication logs, with five explainable detection rules, SQLite persistence, and Docker Compose deployment.</p>
+</blockquote>
+<p>Suggested topics: <code>cybersecurity</code>, <code>siem</code>, <code>soc</code>, <code>log-analysis</code>, <code>fastapi</code>, <code>sqlite</code>, <code>mitre-attack</code>, <code>python</code>.</p>
+<p>Use the actual screenshots under <code>docs/screenshots/</code> for the project page. Describe the app as a file-based portfolio project with automated correlation tests. Avoid claims about enterprise scale, production detection coverage, or verified account compromise.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

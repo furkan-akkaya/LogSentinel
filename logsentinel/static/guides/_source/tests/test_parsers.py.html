@@ -1,0 +1,140 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>tests/test_parsers.py · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../../docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1>tests/test_parsers.py</h1><p>Repository source snapshot packaged with this release.</p><pre class="source-code"><code><span id="L1"><a href="#L1" aria-label="Line 1">   1</a> import json</span>
+<span id="L2"><a href="#L2" aria-label="Line 2">   2</a> import pytest</span>
+<span id="L3"><a href="#L3" aria-label="Line 3">   3</a> from logsentinel.parsers import parse, timestamp</span>
+<span id="L4"><a href="#L4" aria-label="Line 4">   4</a> </span>
+<span id="L5"><a href="#L5" aria-label="Line 5">   5</a> </span>
+<span id="L6"><a href="#L6" aria-label="Line 6">   6</a> def test_linux_demo(samples):</span>
+<span id="L7"><a href="#L7" aria-label="Line 7">   7</a>     result = parse((samples / &quot;linux-auth.log&quot;).read_text())</span>
+<span id="L8"><a href="#L8" aria-label="Line 8">   8</a>     assert len(result.events) == 50</span>
+<span id="L9"><a href="#L9" aria-label="Line 9">   9</a>     assert result.rejected == result.ignored == 0</span>
+<span id="L10"><a href="#L10" aria-label="Line 10">  10</a>     sudo = next(e for e in result.events if e.event_type == &quot;sudo_failure&quot;)</span>
+<span id="L11"><a href="#L11" aria-label="Line 11">  11</a>     assert sudo.user == &quot;analyst&quot; and sudo.metadata[&quot;target_user&quot;] == &quot;root&quot;</span>
+<span id="L12"><a href="#L12" aria-label="Line 12">  12</a> </span>
+<span id="L13"><a href="#L13" aria-label="Line 13">  13</a> </span>
+<span id="L14"><a href="#L14" aria-label="Line 14">  14</a> def test_windows_xml_matches_json(samples):</span>
+<span id="L15"><a href="#L15" aria-label="Line 15">  15</a>     xml = parse((samples / &quot;windows-security.xml&quot;).read_text())</span>
+<span id="L16"><a href="#L16" aria-label="Line 16">  16</a>     js = parse((samples / &quot;windows-security.json&quot;).read_text())</span>
+<span id="L17"><a href="#L17" aria-label="Line 17">  17</a>     assert len(xml.events) == len(js.events) == 35</span>
+<span id="L18"><a href="#L18" aria-label="Line 18">  18</a>     assert [e.id for e in xml.events] == [e.id for e in js.events]</span>
+<span id="L19"><a href="#L19" aria-label="Line 19">  19</a> </span>
+<span id="L20"><a href="#L20" aria-label="Line 20">  20</a> </span>
+<span id="L21"><a href="#L21" aria-label="Line 21">  21</a> @pytest.mark.parametrize(</span>
+<span id="L22"><a href="#L22" aria-label="Line 22">  22</a>     &quot;stamp,expected&quot;,</span>
+<span id="L23"><a href="#L23" aria-label="Line 23">  23</a>     [</span>
+<span id="L24"><a href="#L24" aria-label="Line 24">  24</a>         (&quot;2026-10-26T10:00:00+03:00&quot;, &quot;2026-10-26T07:00:00.000000Z&quot;),</span>
+<span id="L25"><a href="#L25" aria-label="Line 25">  25</a>         (&quot;2026-10-26T08:00:00.1234567Z&quot;, &quot;2026-10-26T08:00:00.123456Z&quot;),</span>
+<span id="L26"><a href="#L26" aria-label="Line 26">  26</a>         (&quot;2026-10-26T08:00:00&quot;, &quot;2026-10-26T08:00:00.000000Z&quot;),</span>
+<span id="L27"><a href="#L27" aria-label="Line 27">  27</a>     ],</span>
+<span id="L28"><a href="#L28" aria-label="Line 28">  28</a> )</span>
+<span id="L29"><a href="#L29" aria-label="Line 29">  29</a> def test_iso_timestamps(stamp, expected):</span>
+<span id="L30"><a href="#L30" aria-label="Line 30">  30</a>     assert timestamp(stamp) == expected</span>
+<span id="L31"><a href="#L31" aria-label="Line 31">  31</a> </span>
+<span id="L32"><a href="#L32" aria-label="Line 32">  32</a> </span>
+<span id="L33"><a href="#L33" aria-label="Line 33">  33</a> def test_yearless_import_context():</span>
+<span id="L34"><a href="#L34" aria-label="Line 34">  34</a>     result = parse(</span>
+<span id="L35"><a href="#L35" aria-label="Line 35">  35</a>         &quot;Dec 31 23:59:59 host sshd[1]: Failed password for bob from 2001:db8::1 port 22 ssh2&quot;,</span>
+<span id="L36"><a href="#L36" aria-label="Line 36">  36</a>         year=2024,</span>
+<span id="L37"><a href="#L37" aria-label="Line 37">  37</a>         offset=&quot;-05:00&quot;,</span>
+<span id="L38"><a href="#L38" aria-label="Line 38">  38</a>     )</span>
+<span id="L39"><a href="#L39" aria-label="Line 39">  39</a>     assert result.events[0].timestamp == &quot;2025-01-01T04:59:59.000000Z&quot;</span>
+<span id="L40"><a href="#L40" aria-label="Line 40">  40</a> </span>
+<span id="L41"><a href="#L41" aria-label="Line 41">  41</a> </span>
+<span id="L42"><a href="#L42" aria-label="Line 42">  42</a> @pytest.mark.parametrize(&quot;offset&quot;, [&quot;Europe/Istanbul&quot;, &quot;+25:00&quot;, &quot;+14:01&quot;, &quot;00:00&quot;])</span>
+<span id="L43"><a href="#L43" aria-label="Line 43">  43</a> def test_invalid_offsets(offset):</span>
+<span id="L44"><a href="#L44" aria-label="Line 44">  44</a>     with pytest.raises(ValueError):</span>
+<span id="L45"><a href="#L45" aria-label="Line 45">  45</a>         parse(&quot;x&quot;, offset=offset)</span>
+<span id="L46"><a href="#L46" aria-label="Line 46">  46</a> </span>
+<span id="L47"><a href="#L47" aria-label="Line 47">  47</a> </span>
+<span id="L48"><a href="#L48" aria-label="Line 48">  48</a> def test_malformed_and_ignored(samples):</span>
+<span id="L49"><a href="#L49" aria-label="Line 49">  49</a>     assert parse((samples / &quot;malformed.log&quot;).read_text()).rejected == 2</span>
+<span id="L50"><a href="#L50" aria-label="Line 50">  50</a>     result = parse(</span>
+<span id="L51"><a href="#L51" aria-label="Line 51">  51</a>         &quot;Oct 26 08:00:00 host cron[123]: running job\nOct 26 08:00:01 host sshd[1]: Connection closed&quot;</span>
+<span id="L52"><a href="#L52" aria-label="Line 52">  52</a>     )</span>
+<span id="L53"><a href="#L53" aria-label="Line 53">  53</a>     assert result.ignored == 2</span>
+<span id="L54"><a href="#L54" aria-label="Line 54">  54</a> </span>
+<span id="L55"><a href="#L55" aria-label="Line 55">  55</a> </span>
+<span id="L56"><a href="#L56" aria-label="Line 56">  56</a> def test_ndjson_mixed(samples):</span>
+<span id="L57"><a href="#L57" aria-label="Line 57">  57</a>     record = json.loads((samples / &quot;windows-security.json&quot;).read_text())[0]</span>
+<span id="L58"><a href="#L58" aria-label="Line 58">  58</a>     result = parse(json.dumps(record) + &quot;\n{bad json\n&quot; + json.dumps(record), &quot;json&quot;)</span>
+<span id="L59"><a href="#L59" aria-label="Line 59">  59</a>     assert len(result.events) == 2 and result.rejected == 1</span>
+<span id="L60"><a href="#L60" aria-label="Line 60">  60</a> </span>
+<span id="L61"><a href="#L61" aria-label="Line 61">  61</a> </span>
+<span id="L62"><a href="#L62" aria-label="Line 62">  62</a> def test_flat_json_and_missing_fields():</span>
+<span id="L63"><a href="#L63" aria-label="Line 63">  63</a>     record = {</span>
+<span id="L64"><a href="#L64" aria-label="Line 64">  64</a>         &quot;EventID&quot;: 4625,</span>
+<span id="L65"><a href="#L65" aria-label="Line 65">  65</a>         &quot;TimeCreated&quot;: &quot;2026-10-26T08:00:00Z&quot;,</span>
+<span id="L66"><a href="#L66" aria-label="Line 66">  66</a>         &quot;Computer&quot;: &quot;WS01&quot;,</span>
+<span id="L67"><a href="#L67" aria-label="Line 67">  67</a>         &quot;TargetUserName&quot;: &quot;alice&quot;,</span>
+<span id="L68"><a href="#L68" aria-label="Line 68">  68</a>         &quot;IpAddress&quot;: &quot;::ffff:192.0.2.1&quot;,</span>
+<span id="L69"><a href="#L69" aria-label="Line 69">  69</a>     }</span>
+<span id="L70"><a href="#L70" aria-label="Line 70">  70</a>     e = parse(json.dumps(record)).events[0]</span>
+<span id="L71"><a href="#L71" aria-label="Line 71">  71</a>     assert e.host == &quot;ws01&quot; and e.source_ip == &quot;192.0.2.1&quot;</span>
+<span id="L72"><a href="#L72" aria-label="Line 72">  72</a>     del record[&quot;Computer&quot;]</span>
+<span id="L73"><a href="#L73" aria-label="Line 73">  73</a>     assert parse(json.dumps(record)).rejected == 1</span>
+<span id="L74"><a href="#L74" aria-label="Line 74">  74</a> </span>
+<span id="L75"><a href="#L75" aria-label="Line 75">  75</a> </span>
+<span id="L76"><a href="#L76" aria-label="Line 76">  76</a> def test_windows_named_data(samples):</span>
+<span id="L77"><a href="#L77" aria-label="Line 77">  77</a>     record = json.loads((samples / &quot;windows-security.json&quot;).read_text())[0]</span>
+<span id="L78"><a href="#L78" aria-label="Line 78">  78</a>     baseline = parse(json.dumps(record)).events[0]</span>
+<span id="L79"><a href="#L79" aria-label="Line 79">  79</a>     record[&quot;EventData&quot;] = {</span>
+<span id="L80"><a href="#L80" aria-label="Line 80">  80</a>         &quot;Data&quot;: [{&quot;@Name&quot;: k, &quot;#text&quot;: v} for k, v in record[&quot;EventData&quot;].items()]</span>
+<span id="L81"><a href="#L81" aria-label="Line 81">  81</a>     }</span>
+<span id="L82"><a href="#L82" aria-label="Line 82">  82</a>     assert parse(json.dumps({&quot;Event&quot;: record})).events[0].id == baseline.id</span>
+<span id="L83"><a href="#L83" aria-label="Line 83">  83</a> </span>
+<span id="L84"><a href="#L84" aria-label="Line 84">  84</a> </span>
+<span id="L85"><a href="#L85" aria-label="Line 85">  85</a> @pytest.mark.parametrize(</span>
+<span id="L86"><a href="#L86" aria-label="Line 86">  86</a>     &quot;payload&quot;,</span>
+<span id="L87"><a href="#L87" aria-label="Line 87">  87</a>     [</span>
+<span id="L88"><a href="#L88" aria-label="Line 88">  88</a>         &#x27;&lt;!DOCTYPE Event [&lt;!ENTITY x SYSTEM &quot;file:///etc/passwd&quot;&gt;]&gt;&lt;Event&gt;&amp;x;&lt;/Event&gt;&#x27;,</span>
+<span id="L89"><a href="#L89" aria-label="Line 89">  89</a>         &quot;&lt;!DOCTYPE Events&gt;&lt;Events/&gt;&quot;,</span>
+<span id="L90"><a href="#L90" aria-label="Line 90">  90</a>         &quot;&lt;Events&gt;&lt;Event&gt;&quot;,</span>
+<span id="L91"><a href="#L91" aria-label="Line 91">  91</a>         &quot;&lt;other/&gt;&quot;,</span>
+<span id="L92"><a href="#L92" aria-label="Line 92">  92</a>     ],</span>
+<span id="L93"><a href="#L93" aria-label="Line 93">  93</a> )</span>
+<span id="L94"><a href="#L94" aria-label="Line 94">  94</a> def test_unsafe_or_invalid_xml(payload):</span>
+<span id="L95"><a href="#L95" aria-label="Line 95">  95</a>     with pytest.raises(ValueError):</span>
+<span id="L96"><a href="#L96" aria-label="Line 96">  96</a>         parse(payload, &quot;xml&quot;)</span>
+<span id="L97"><a href="#L97" aria-label="Line 97">  97</a> </span>
+<span id="L98"><a href="#L98" aria-label="Line 98">  98</a> </span>
+<span id="L99"><a href="#L99" aria-label="Line 99">  99</a> @pytest.mark.parametrize(</span>
+<span id="L100"><a href="#L100" aria-label="Line 100"> 100</a>     &quot;payload&quot;,</span>
+<span id="L101"><a href="#L101" aria-label="Line 101"> 101</a>     [</span>
+<span id="L102"><a href="#L102" aria-label="Line 102"> 102</a>         &quot;[]&quot;,</span>
+<span id="L103"><a href="#L103" aria-label="Line 103"> 103</a>         &#x27;[null, 42, {}, {&quot;Event&quot;:null}]&#x27;,</span>
+<span id="L104"><a href="#L104" aria-label="Line 104"> 104</a>         &#x27;{&quot;System&quot;: []}&#x27;,</span>
+<span id="L105"><a href="#L105" aria-label="Line 105"> 105</a>         &#x27;{&quot;EventID&quot;:4625,&quot;Computer&quot;:&quot;host&quot;,&quot;TimeCreated&quot;:&quot;bad&quot;}&#x27;,</span>
+<span id="L106"><a href="#L106" aria-label="Line 106"> 106</a>     ],</span>
+<span id="L107"><a href="#L107" aria-label="Line 107"> 107</a> )</span>
+<span id="L108"><a href="#L108" aria-label="Line 108"> 108</a> def test_invalid_json_never_crashes(payload):</span>
+<span id="L109"><a href="#L109" aria-label="Line 109"> 109</a>     assert parse(payload, &quot;json&quot;) is not None</span>
+<span id="L110"><a href="#L110" aria-label="Line 110"> 110</a> </span>
+<span id="L111"><a href="#L111" aria-label="Line 111"> 111</a> </span>
+<span id="L112"><a href="#L112" aria-label="Line 112"> 112</a> def test_input_limits():</span>
+<span id="L113"><a href="#L113" aria-label="Line 113"> 113</a>     with pytest.raises(ValueError):</span>
+<span id="L114"><a href="#L114" aria-label="Line 114"> 114</a>         parse(&quot;x\n&quot; * 20001)</span>
+<span id="L115"><a href="#L115" aria-label="Line 115"> 115</a>     assert parse(&quot;x&quot; * 65537).rejected == 1</span>
+<span id="L116"><a href="#L116" aria-label="Line 116"> 116</a>     with pytest.raises(ValueError):</span>
+<span id="L117"><a href="#L117" aria-label="Line 117"> 117</a>         parse(&quot;&quot;)</span>
+<span id="L118"><a href="#L118" aria-label="Line 118"> 118</a>     with pytest.raises(ValueError):</span>
+<span id="L119"><a href="#L119" aria-label="Line 119"> 119</a>         parse(&quot;x&quot;, year=1800)</span>
+<span id="L120"><a href="#L120" aria-label="Line 120"> 120</a> </span>
+<span id="L121"><a href="#L121" aria-label="Line 121"> 121</a> </span>
+<span id="L122"><a href="#L122" aria-label="Line 122"> 122</a> def test_sudo_summary_is_marked():</span>
+<span id="L123"><a href="#L123" aria-label="Line 123"> 123</a>     e = parse(</span>
+<span id="L124"><a href="#L124" aria-label="Line 124"> 124</a>         &quot;Oct 26 08:00:00 host sudo: alice : 3 incorrect password attempts ; TTY=pts/1 ; USER=root&quot;</span>
+<span id="L125"><a href="#L125" aria-label="Line 125"> 125</a>     ).events[0]</span>
+<span id="L126"><a href="#L126" aria-label="Line 126"> 126</a>     assert e.metadata[&quot;aggregate_summary&quot;]</span>
+<span id="L127"><a href="#L127" aria-label="Line 127"> 127</a> </span>
+<span id="L128"><a href="#L128" aria-label="Line 128"> 128</a> </span>
+<span id="L129"><a href="#L129" aria-label="Line 129"> 129</a> def test_bundled_demo_matches_public_samples(samples):</span>
+<span id="L130"><a href="#L130" aria-label="Line 130"> 130</a>     from logsentinel.app import ROOT</span>
+<span id="L131"><a href="#L131" aria-label="Line 131"> 131</a> </span>
+<span id="L132"><a href="#L132" aria-label="Line 132"> 132</a>     for name in [&quot;linux-auth.log&quot;, &quot;windows-security.json&quot;]:</span>
+<span id="L133"><a href="#L133" aria-label="Line 133"> 133</a>         assert (samples / name).read_bytes() == (ROOT / &quot;demo&quot; / name).read_bytes()</span>
+<span id="L134"><a href="#L134" aria-label="Line 134"> 134</a> </span>
+<span id="L135"><a href="#L135" aria-label="Line 135"> 135</a> </span>
+<span id="L136"><a href="#L136" aria-label="Line 136"> 136</a> def test_sudo_target_is_not_inferred_as_invoking_user():</span>
+<span id="L137"><a href="#L137" aria-label="Line 137"> 137</a>     e = parse(</span>
+<span id="L138"><a href="#L138" aria-label="Line 138"> 138</a>         &quot;Oct 26 08:00:00 host sudo[1]: pam_unix(sudo:auth): authentication failure; logname= ruser= tty=/dev/pts/1 user=root&quot;</span>
+<span id="L139"><a href="#L139" aria-label="Line 139"> 139</a>     ).events[0]</span>
+<span id="L140"><a href="#L140" aria-label="Line 140"> 140</a>     assert e.user is None and e.metadata[&quot;target_user&quot;] == &quot;root&quot;</span></code></pre></main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

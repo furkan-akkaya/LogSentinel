@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=78"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "logsentinel"
+version = "1.1.0"
+description = "A local mini SIEM for Linux and Windows authentication logs"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = ["fastapi==0.162.0", "uvicorn==0.54.0", "python-multipart==0.0.32", "defusedxml==0.7.1"]
+
+[project.optional-dependencies]
+test = ["pytest==9.2.0", "httpx2==2.16.0"]
+browser = ["playwright==1.64.1"]
+docs = ["markdown-it-py==4.0.0"]
+
+[tool.setuptools.packages.find]
+include = ["logsentinel*"]
+
+[tool.setuptools.package-data]
+logsentinel = ["static/*", "static/guides/**/*", "demo/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

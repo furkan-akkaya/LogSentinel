@@ -1,0 +1,174 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>logsentinel/detection.py · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../../docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1>logsentinel/detection.py</h1><p>Repository source snapshot packaged with this release.</p><pre class="source-code"><code><span id="L1"><a href="#L1" aria-label="Line 1">   1</a> &quot;&quot;&quot;Deterministic event-time rules. No ingestion-time correlation.&quot;&quot;&quot;</span>
+<span id="L2"><a href="#L2" aria-label="Line 2">   2</a> </span>
+<span id="L3"><a href="#L3" aria-label="Line 3">   3</a> from collections import defaultdict, deque</span>
+<span id="L4"><a href="#L4" aria-label="Line 4">   4</a> from datetime import datetime</span>
+<span id="L5"><a href="#L5" aria-label="Line 5">   5</a> import hashlib</span>
+<span id="L6"><a href="#L6" aria-label="Line 6">   6</a> import json</span>
+<span id="L7"><a href="#L7" aria-label="Line 7">   7</a> </span>
+<span id="L8"><a href="#L8" aria-label="Line 8">   8</a> DEFAULTS = {</span>
+<span id="L9"><a href="#L9" aria-label="Line 9">   9</a>     &quot;ssh_threshold&quot;: 5,</span>
+<span id="L10"><a href="#L10" aria-label="Line 10">  10</a>     &quot;windows_threshold&quot;: 5,</span>
+<span id="L11"><a href="#L11" aria-label="Line 11">  11</a>     &quot;sudo_threshold&quot;: 3,</span>
+<span id="L12"><a href="#L12" aria-label="Line 12">  12</a>     &quot;success_threshold&quot;: 3,</span>
+<span id="L13"><a href="#L13" aria-label="Line 13">  13</a>     &quot;window_seconds&quot;: 300,</span>
+<span id="L14"><a href="#L14" aria-label="Line 14">  14</a> }</span>
+<span id="L15"><a href="#L15" aria-label="Line 15">  15</a> RULES = {</span>
+<span id="L16"><a href="#L16" aria-label="Line 16">  16</a>     &quot;ssh_brute_force&quot;: (&quot;SSH password guessing&quot;, &quot;high&quot;, [&quot;T1110.001&quot;]),</span>
+<span id="L17"><a href="#L17" aria-label="Line 17">  17</a>     &quot;ssh_success_after_failures&quot;: (</span>
+<span id="L18"><a href="#L18" aria-label="Line 18">  18</a>         &quot;SSH success after failures&quot;,</span>
+<span id="L19"><a href="#L19" aria-label="Line 19">  19</a>         &quot;critical&quot;,</span>
+<span id="L20"><a href="#L20" aria-label="Line 20">  20</a>         [&quot;T1110.001&quot;, &quot;T1078&quot;],</span>
+<span id="L21"><a href="#L21" aria-label="Line 21">  21</a>     ),</span>
+<span id="L22"><a href="#L22" aria-label="Line 22">  22</a>     &quot;windows_brute_force&quot;: (&quot;Windows repeated logon failures&quot;, &quot;high&quot;, [&quot;T1110.001&quot;]),</span>
+<span id="L23"><a href="#L23" aria-label="Line 23">  23</a>     &quot;windows_success_after_failures&quot;: (</span>
+<span id="L24"><a href="#L24" aria-label="Line 24">  24</a>         &quot;Windows success after failures&quot;,</span>
+<span id="L25"><a href="#L25" aria-label="Line 25">  25</a>         &quot;critical&quot;,</span>
+<span id="L26"><a href="#L26" aria-label="Line 26">  26</a>         [&quot;T1110.001&quot;, &quot;T1078&quot;],</span>
+<span id="L27"><a href="#L27" aria-label="Line 27">  27</a>     ),</span>
+<span id="L28"><a href="#L28" aria-label="Line 28">  28</a>     &quot;sudo_failures&quot;: (&quot;Repeated sudo authentication failures&quot;, &quot;medium&quot;, [&quot;T1110.001&quot;]),</span>
+<span id="L29"><a href="#L29" aria-label="Line 29">  29</a> }</span>
+<span id="L30"><a href="#L30" aria-label="Line 30">  30</a> THRESHOLD_SETTINGS = {</span>
+<span id="L31"><a href="#L31" aria-label="Line 31">  31</a>     &quot;ssh_brute_force&quot;: &quot;ssh_threshold&quot;,</span>
+<span id="L32"><a href="#L32" aria-label="Line 32">  32</a>     &quot;windows_brute_force&quot;: &quot;windows_threshold&quot;,</span>
+<span id="L33"><a href="#L33" aria-label="Line 33">  33</a>     &quot;sudo_failures&quot;: &quot;sudo_threshold&quot;,</span>
+<span id="L34"><a href="#L34" aria-label="Line 34">  34</a>     &quot;ssh_success_after_failures&quot;: &quot;success_threshold&quot;,</span>
+<span id="L35"><a href="#L35" aria-label="Line 35">  35</a>     &quot;windows_success_after_failures&quot;: &quot;success_threshold&quot;,</span>
+<span id="L36"><a href="#L36" aria-label="Line 36">  36</a> }</span>
+<span id="L37"><a href="#L37" aria-label="Line 37">  37</a> </span>
+<span id="L38"><a href="#L38" aria-label="Line 38">  38</a> </span>
+<span id="L39"><a href="#L39" aria-label="Line 39">  39</a> def seconds(stamp):</span>
+<span id="L40"><a href="#L40" aria-label="Line 40">  40</a>     return datetime.fromisoformat(stamp.replace(&quot;Z&quot;, &quot;+00:00&quot;)).timestamp()</span>
+<span id="L41"><a href="#L41" aria-label="Line 41">  41</a> </span>
+<span id="L42"><a href="#L42" aria-label="Line 42">  42</a> </span>
+<span id="L43"><a href="#L43" aria-label="Line 43">  43</a> def correlation_key(event):</span>
+<span id="L44"><a href="#L44" aria-label="Line 44">  44</a>     &quot;&quot;&quot;Unknown identities never join; Windows domain and logon type are required.&quot;&quot;&quot;</span>
+<span id="L45"><a href="#L45" aria-label="Line 45">  45</a>     if not event[&quot;host&quot;] or not event[&quot;user&quot;]:</span>
+<span id="L46"><a href="#L46" aria-label="Line 46">  46</a>         return None</span>
+<span id="L47"><a href="#L47" aria-label="Line 47">  47</a>     meta = event[&quot;metadata&quot;]</span>
+<span id="L48"><a href="#L48" aria-label="Line 48">  48</a>     if event[&quot;event_type&quot;] == &quot;ssh_failure&quot; and meta.get(&quot;method&quot;) == &quot;publickey&quot;:</span>
+<span id="L49"><a href="#L49" aria-label="Line 49">  49</a>         # Trying several SSH keys is not evidence of password guessing.</span>
+<span id="L50"><a href="#L50" aria-label="Line 50">  50</a>         return None</span>
+<span id="L51"><a href="#L51" aria-label="Line 51">  51</a>     if event[&quot;event_type&quot;] == &quot;sudo_failure&quot;:</span>
+<span id="L52"><a href="#L52" aria-label="Line 52">  52</a>         # PAM detail and sudo summaries can describe the same attempts.</span>
+<span id="L53"><a href="#L53" aria-label="Line 53">  53</a>         # Ignore summaries rather than double counting.</span>
+<span id="L54"><a href="#L54" aria-label="Line 54">  54</a>         if meta.get(&quot;aggregate_summary&quot;) or not meta.get(&quot;tty&quot;):</span>
+<span id="L55"><a href="#L55" aria-label="Line 55">  55</a>             return None</span>
+<span id="L56"><a href="#L56" aria-label="Line 56">  56</a>         return (event[&quot;host&quot;], event[&quot;user&quot;], meta.get(&quot;tty&quot;))</span>
+<span id="L57"><a href="#L57" aria-label="Line 57">  57</a>     if not event[&quot;source_ip&quot;]:</span>
+<span id="L58"><a href="#L58" aria-label="Line 58">  58</a>         return None</span>
+<span id="L59"><a href="#L59" aria-label="Line 59">  59</a>     if event[&quot;source&quot;] == &quot;windows&quot;:</span>
+<span id="L60"><a href="#L60" aria-label="Line 60">  60</a>         if not meta.get(&quot;domain&quot;) or not meta.get(&quot;logon_type&quot;):</span>
+<span id="L61"><a href="#L61" aria-label="Line 61">  61</a>             return None</span>
+<span id="L62"><a href="#L62" aria-label="Line 62">  62</a>         return (</span>
+<span id="L63"><a href="#L63" aria-label="Line 63">  63</a>             event[&quot;host&quot;].casefold(),</span>
+<span id="L64"><a href="#L64" aria-label="Line 64">  64</a>             event[&quot;source_ip&quot;],</span>
+<span id="L65"><a href="#L65" aria-label="Line 65">  65</a>             event[&quot;user&quot;].casefold(),</span>
+<span id="L66"><a href="#L66" aria-label="Line 66">  66</a>             meta[&quot;domain&quot;].casefold(),</span>
+<span id="L67"><a href="#L67" aria-label="Line 67">  67</a>             meta[&quot;logon_type&quot;],</span>
+<span id="L68"><a href="#L68" aria-label="Line 68">  68</a>         )</span>
+<span id="L69"><a href="#L69" aria-label="Line 69">  69</a>     return (event[&quot;host&quot;], event[&quot;source_ip&quot;], event[&quot;user&quot;])</span>
+<span id="L70"><a href="#L70" aria-label="Line 70">  70</a> </span>
+<span id="L71"><a href="#L71" aria-label="Line 71">  71</a> </span>
+<span id="L72"><a href="#L72" aria-label="Line 72">  72</a> def detect(events, settings):</span>
+<span id="L73"><a href="#L73" aria-label="Line 73">  73</a>     alerts = []</span>
+<span id="L74"><a href="#L74" aria-label="Line 74">  74</a>     window = settings[&quot;window_seconds&quot;]</span>
+<span id="L75"><a href="#L75" aria-label="Line 75">  75</a> </span>
+<span id="L76"><a href="#L76" aria-label="Line 76">  76</a>     def alert(rule, evidence, key, anchor):</span>
+<span id="L77"><a href="#L77" aria-label="Line 77">  77</a>         title, severity, mitre = RULES[rule]</span>
+<span id="L78"><a href="#L78" aria-label="Line 78">  78</a>         last = evidence[-1]</span>
+<span id="L79"><a href="#L79" aria-label="Line 79">  79</a>         # Stable ID for an episode while its evidence grows.</span>
+<span id="L80"><a href="#L80" aria-label="Line 80">  80</a>         identifier = hashlib.sha256(</span>
+<span id="L81"><a href="#L81" aria-label="Line 81">  81</a>             json.dumps([rule, key, anchor]).encode()</span>
+<span id="L82"><a href="#L82" aria-label="Line 82">  82</a>         ).hexdigest()</span>
+<span id="L83"><a href="#L83" aria-label="Line 83">  83</a>         count = sum(e[&quot;event_type&quot;].endswith(&quot;failure&quot;) for e in evidence)</span>
+<span id="L84"><a href="#L84" aria-label="Line 84">  84</a>         reason = f&quot;{count} matching authentication failure records within {window}s&quot;</span>
+<span id="L85"><a href="#L85" aria-label="Line 85">  85</a>         if &quot;success_after&quot; in rule:</span>
+<span id="L86"><a href="#L86" aria-label="Line 86">  86</a>             reason += &quot;, followed by a strictly later successful logon. Review for possible account compromise.&quot;</span>
+<span id="L87"><a href="#L87" aria-label="Line 87">  87</a>         else:</span>
+<span id="L88"><a href="#L88" aria-label="Line 88">  88</a>             reason += &quot;. The configured threshold was reached; review the evidence.&quot;</span>
+<span id="L89"><a href="#L89" aria-label="Line 89">  89</a>         alerts.append(</span>
+<span id="L90"><a href="#L90" aria-label="Line 90">  90</a>             {</span>
+<span id="L91"><a href="#L91" aria-label="Line 91">  91</a>                 &quot;id&quot;: identifier,</span>
+<span id="L92"><a href="#L92" aria-label="Line 92">  92</a>                 &quot;rule&quot;: rule,</span>
+<span id="L93"><a href="#L93" aria-label="Line 93">  93</a>                 &quot;title&quot;: title,</span>
+<span id="L94"><a href="#L94" aria-label="Line 94">  94</a>                 &quot;severity&quot;: severity,</span>
+<span id="L95"><a href="#L95" aria-label="Line 95">  95</a>                 &quot;mitre&quot;: mitre,</span>
+<span id="L96"><a href="#L96" aria-label="Line 96">  96</a>                 &quot;first_seen&quot;: evidence[0][&quot;timestamp&quot;],</span>
+<span id="L97"><a href="#L97" aria-label="Line 97">  97</a>                 &quot;last_seen&quot;: last[&quot;timestamp&quot;],</span>
+<span id="L98"><a href="#L98" aria-label="Line 98">  98</a>                 &quot;host&quot;: last[&quot;host&quot;],</span>
+<span id="L99"><a href="#L99" aria-label="Line 99">  99</a>                 &quot;source_ip&quot;: last[&quot;source_ip&quot;],</span>
+<span id="L100"><a href="#L100" aria-label="Line 100"> 100</a>                 &quot;user&quot;: last[&quot;user&quot;],</span>
+<span id="L101"><a href="#L101" aria-label="Line 101"> 101</a>                 &quot;reason&quot;: reason,</span>
+<span id="L102"><a href="#L102" aria-label="Line 102"> 102</a>                 &quot;parameters&quot;: {</span>
+<span id="L103"><a href="#L103" aria-label="Line 103"> 103</a>                     &quot;threshold&quot;: settings[THRESHOLD_SETTINGS[rule]],</span>
+<span id="L104"><a href="#L104" aria-label="Line 104"> 104</a>                     &quot;window_seconds&quot;: window,</span>
+<span id="L105"><a href="#L105" aria-label="Line 105"> 105</a>                 },</span>
+<span id="L106"><a href="#L106" aria-label="Line 106"> 106</a>                 &quot;evidence&quot;: [e[&quot;id&quot;] for e in evidence],</span>
+<span id="L107"><a href="#L107" aria-label="Line 107"> 107</a>             }</span>
+<span id="L108"><a href="#L108" aria-label="Line 108"> 108</a>         )</span>
+<span id="L109"><a href="#L109" aria-label="Line 109"> 109</a> </span>
+<span id="L110"><a href="#L110" aria-label="Line 110"> 110</a>     for family, failure, success, threshold in [</span>
+<span id="L111"><a href="#L111" aria-label="Line 111"> 111</a>         (&quot;ssh&quot;, &quot;ssh_failure&quot;, &quot;ssh_success&quot;, settings[&quot;ssh_threshold&quot;]),</span>
+<span id="L112"><a href="#L112" aria-label="Line 112"> 112</a>         (</span>
+<span id="L113"><a href="#L113" aria-label="Line 113"> 113</a>             &quot;windows&quot;,</span>
+<span id="L114"><a href="#L114" aria-label="Line 114"> 114</a>             &quot;windows_failure&quot;,</span>
+<span id="L115"><a href="#L115" aria-label="Line 115"> 115</a>             &quot;windows_success&quot;,</span>
+<span id="L116"><a href="#L116" aria-label="Line 116"> 116</a>             settings[&quot;windows_threshold&quot;],</span>
+<span id="L117"><a href="#L117" aria-label="Line 117"> 117</a>         ),</span>
+<span id="L118"><a href="#L118" aria-label="Line 118"> 118</a>         (&quot;sudo&quot;, &quot;sudo_failure&quot;, None, settings[&quot;sudo_threshold&quot;]),</span>
+<span id="L119"><a href="#L119" aria-label="Line 119"> 119</a>     ]:</span>
+<span id="L120"><a href="#L120" aria-label="Line 120"> 120</a>         groups = defaultdict(list)</span>
+<span id="L121"><a href="#L121" aria-label="Line 121"> 121</a>         for event in events:</span>
+<span id="L122"><a href="#L122" aria-label="Line 122"> 122</a>             if event[&quot;event_type&quot;] in (failure, success):</span>
+<span id="L123"><a href="#L123" aria-label="Line 123"> 123</a>                 key = correlation_key(event)</span>
+<span id="L124"><a href="#L124" aria-label="Line 124"> 124</a>                 if key:</span>
+<span id="L125"><a href="#L125" aria-label="Line 125"> 125</a>                     groups[key].append(event)</span>
+<span id="L126"><a href="#L126" aria-label="Line 126"> 126</a>         for key, group in groups.items():</span>
+<span id="L127"><a href="#L127" aria-label="Line 127"> 127</a>             group.sort(key=lambda e: (e[&quot;timestamp&quot;], e[&quot;id&quot;]))</span>
+<span id="L128"><a href="#L128" aria-label="Line 128"> 128</a>             recent = deque()</span>
+<span id="L129"><a href="#L129" aria-label="Line 129"> 129</a>             episode = []</span>
+<span id="L130"><a href="#L130" aria-label="Line 130"> 130</a>             episode_alert = None</span>
+<span id="L131"><a href="#L131" aria-label="Line 131"> 131</a>             for event in group:</span>
+<span id="L132"><a href="#L132" aria-label="Line 132"> 132</a>                 t = seconds(event[&quot;timestamp&quot;])</span>
+<span id="L133"><a href="#L133" aria-label="Line 133"> 133</a>                 while recent and seconds(recent[0][&quot;timestamp&quot;]) &lt; t - window:</span>
+<span id="L134"><a href="#L134" aria-label="Line 134"> 134</a>                     recent.popleft()</span>
+<span id="L135"><a href="#L135" aria-label="Line 135"> 135</a>                 if event[&quot;event_type&quot;] == failure:</span>
+<span id="L136"><a href="#L136" aria-label="Line 136"> 136</a>                     if not episode or t - seconds(episode[0][&quot;timestamp&quot;]) &gt; window:</span>
+<span id="L137"><a href="#L137" aria-label="Line 137"> 137</a>                         episode, episode_alert = [], None</span>
+<span id="L138"><a href="#L138" aria-label="Line 138"> 138</a>                     episode.append(event)</span>
+<span id="L139"><a href="#L139" aria-label="Line 139"> 139</a>                     recent.append(event)</span>
+<span id="L140"><a href="#L140" aria-label="Line 140"> 140</a>                     if episode_alert is None and len(recent) &gt;= threshold:</span>
+<span id="L141"><a href="#L141" aria-label="Line 141"> 141</a>                         # Evidence spans a bounded window, even across old episode boundaries.</span>
+<span id="L142"><a href="#L142" aria-label="Line 142"> 142</a>                         episode = list(recent)</span>
+<span id="L143"><a href="#L143" aria-label="Line 143"> 143</a>                         rule = (</span>
+<span id="L144"><a href="#L144" aria-label="Line 144"> 144</a>                             &quot;sudo_failures&quot;</span>
+<span id="L145"><a href="#L145" aria-label="Line 145"> 145</a>                             if family == &quot;sudo&quot;</span>
+<span id="L146"><a href="#L146" aria-label="Line 146"> 146</a>                             else f&quot;{family}_brute_force&quot;</span>
+<span id="L147"><a href="#L147" aria-label="Line 147"> 147</a>                         )</span>
+<span id="L148"><a href="#L148" aria-label="Line 148"> 148</a>                         alert(rule, episode, key, episode[0][&quot;id&quot;])</span>
+<span id="L149"><a href="#L149" aria-label="Line 149"> 149</a>                         episode_alert = alerts[-1]</span>
+<span id="L150"><a href="#L150" aria-label="Line 150"> 150</a>                     elif episode_alert is not None:</span>
+<span id="L151"><a href="#L151" aria-label="Line 151"> 151</a>                         episode_alert[&quot;last_seen&quot;] = event[&quot;timestamp&quot;]</span>
+<span id="L152"><a href="#L152" aria-label="Line 152"> 152</a>                         episode_alert[&quot;evidence&quot;] = [e[&quot;id&quot;] for e in episode]</span>
+<span id="L153"><a href="#L153" aria-label="Line 153"> 153</a>                         episode_alert[&quot;reason&quot;] = (</span>
+<span id="L154"><a href="#L154" aria-label="Line 154"> 154</a>                             f&quot;{len(episode)} matching authentication failure records within {window}s. The configured threshold was reached; review the evidence.&quot;</span>
+<span id="L155"><a href="#L155" aria-label="Line 155"> 155</a>                         )</span>
+<span id="L156"><a href="#L156" aria-label="Line 156"> 156</a>                 else:</span>
+<span id="L157"><a href="#L157" aria-label="Line 157"> 157</a>                     # Equal-time records do not establish temporal precedence.</span>
+<span id="L158"><a href="#L158" aria-label="Line 158"> 158</a>                     preceding = [</span>
+<span id="L159"><a href="#L159" aria-label="Line 159"> 159</a>                         e for e in recent if e[&quot;timestamp&quot;] &lt; event[&quot;timestamp&quot;]</span>
+<span id="L160"><a href="#L160" aria-label="Line 160"> 160</a>                     ]</span>
+<span id="L161"><a href="#L161" aria-label="Line 161"> 161</a>                     if len(preceding) &gt;= settings[&quot;success_threshold&quot;]:</span>
+<span id="L162"><a href="#L162" aria-label="Line 162"> 162</a>                         alert(</span>
+<span id="L163"><a href="#L163" aria-label="Line 163"> 163</a>                             f&quot;{family}_success_after_failures&quot;,</span>
+<span id="L164"><a href="#L164" aria-label="Line 164"> 164</a>                             preceding + [event],</span>
+<span id="L165"><a href="#L165" aria-label="Line 165"> 165</a>                             key,</span>
+<span id="L166"><a href="#L166" aria-label="Line 166"> 166</a>                             event[&quot;id&quot;],</span>
+<span id="L167"><a href="#L167" aria-label="Line 167"> 167</a>                         )</span>
+<span id="L168"><a href="#L168" aria-label="Line 168"> 168</a>                     # Keep equal-time failures for a subsequent, strictly later</span>
+<span id="L169"><a href="#L169" aria-label="Line 169"> 169</a>                     # success: their ordering relative to this success is unknown.</span>
+<span id="L170"><a href="#L170" aria-label="Line 170"> 170</a>                     recent = deque(</span>
+<span id="L171"><a href="#L171" aria-label="Line 171"> 171</a>                         e for e in recent if e[&quot;timestamp&quot;] == event[&quot;timestamp&quot;]</span>
+<span id="L172"><a href="#L172" aria-label="Line 172"> 172</a>                     )</span>
+<span id="L173"><a href="#L173" aria-label="Line 173"> 173</a>                     episode, episode_alert = [], None</span>
+<span id="L174"><a href="#L174" aria-label="Line 174"> 174</a>     return sorted(alerts, key=lambda a: (a[&quot;last_seen&quot;], a[&quot;id&quot;]))</span></code></pre></main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

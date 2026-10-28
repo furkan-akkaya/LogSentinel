@@ -1,0 +1,157 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>tests/test_windows_source.py · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../../docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1>tests/test_windows_source.py</h1><p>Repository source snapshot packaged with this release.</p><pre class="source-code"><code><span id="L1"><a href="#L1" aria-label="Line 1">   1</a> &quot;&quot;&quot;Explicit Windows source contradictions must never enter correlation.&quot;&quot;&quot;</span>
+<span id="L2"><a href="#L2" aria-label="Line 2">   2</a> </span>
+<span id="L3"><a href="#L3" aria-label="Line 3">   3</a> from copy import deepcopy</span>
+<span id="L4"><a href="#L4" aria-label="Line 4">   4</a> import json</span>
+<span id="L5"><a href="#L5" aria-label="Line 5">   5</a> import xml.etree.ElementTree as ET</span>
+<span id="L6"><a href="#L6" aria-label="Line 6">   6</a> </span>
+<span id="L7"><a href="#L7" aria-label="Line 7">   7</a> import pytest</span>
+<span id="L8"><a href="#L8" aria-label="Line 8">   8</a> from logsentinel.parsers import parse, SECURITY_PROVIDER</span>
+<span id="L9"><a href="#L9" aria-label="Line 9">   9</a> </span>
+<span id="L10"><a href="#L10" aria-label="Line 10">  10</a> GUID = &quot;{54849625-5478-4994-A5BA-3E3B0328C30D}&quot;</span>
+<span id="L11"><a href="#L11" aria-label="Line 11">  11</a> </span>
+<span id="L12"><a href="#L12" aria-label="Line 12">  12</a> </span>
+<span id="L13"><a href="#L13" aria-label="Line 13">  13</a> def record():</span>
+<span id="L14"><a href="#L14" aria-label="Line 14">  14</a>     return {</span>
+<span id="L15"><a href="#L15" aria-label="Line 15">  15</a>         &quot;System&quot;: {</span>
+<span id="L16"><a href="#L16" aria-label="Line 16">  16</a>             &quot;EventID&quot;: 4625,</span>
+<span id="L17"><a href="#L17" aria-label="Line 17">  17</a>             &quot;Computer&quot;: &quot;ws01&quot;,</span>
+<span id="L18"><a href="#L18" aria-label="Line 18">  18</a>             &quot;TimeCreated&quot;: {&quot;SystemTime&quot;: &quot;2026-10-26T12:00:00Z&quot;},</span>
+<span id="L19"><a href="#L19" aria-label="Line 19">  19</a>             &quot;Channel&quot;: &quot;Security&quot;,</span>
+<span id="L20"><a href="#L20" aria-label="Line 20">  20</a>             &quot;EventRecordID&quot;: &quot;1&quot;,</span>
+<span id="L21"><a href="#L21" aria-label="Line 21">  21</a>         },</span>
+<span id="L22"><a href="#L22" aria-label="Line 22">  22</a>         &quot;EventData&quot;: {</span>
+<span id="L23"><a href="#L23" aria-label="Line 23">  23</a>             &quot;TargetUserName&quot;: &quot;alice&quot;,</span>
+<span id="L24"><a href="#L24" aria-label="Line 24">  24</a>             &quot;TargetDomainName&quot;: &quot;LAB&quot;,</span>
+<span id="L25"><a href="#L25" aria-label="Line 25">  25</a>             &quot;LogonType&quot;: &quot;10&quot;,</span>
+<span id="L26"><a href="#L26" aria-label="Line 26">  26</a>             &quot;IpAddress&quot;: &quot;192.0.2.1&quot;,</span>
+<span id="L27"><a href="#L27" aria-label="Line 27">  27</a>         },</span>
+<span id="L28"><a href="#L28" aria-label="Line 28">  28</a>     }</span>
+<span id="L29"><a href="#L29" aria-label="Line 29">  29</a> </span>
+<span id="L30"><a href="#L30" aria-label="Line 30">  30</a> </span>
+<span id="L31"><a href="#L31" aria-label="Line 31">  31</a> def xml(value):</span>
+<span id="L32"><a href="#L32" aria-label="Line 32">  32</a>     root = ET.Element(</span>
+<span id="L33"><a href="#L33" aria-label="Line 33">  33</a>         &quot;Event&quot;, xmlns=&quot;http://schemas.microsoft.com/win/2004/08/events/event&quot;</span>
+<span id="L34"><a href="#L34" aria-label="Line 34">  34</a>     )</span>
+<span id="L35"><a href="#L35" aria-label="Line 35">  35</a>     system = ET.SubElement(root, &quot;System&quot;)</span>
+<span id="L36"><a href="#L36" aria-label="Line 36">  36</a>     for name, data in value[&quot;System&quot;].items():</span>
+<span id="L37"><a href="#L37" aria-label="Line 37">  37</a>         item = ET.SubElement(system, name)</span>
+<span id="L38"><a href="#L38" aria-label="Line 38">  38</a>         if isinstance(data, dict):</span>
+<span id="L39"><a href="#L39" aria-label="Line 39">  39</a>             item.attrib.update(data)</span>
+<span id="L40"><a href="#L40" aria-label="Line 40">  40</a>         else:</span>
+<span id="L41"><a href="#L41" aria-label="Line 41">  41</a>             item.text = str(data)</span>
+<span id="L42"><a href="#L42" aria-label="Line 42">  42</a>     data = ET.SubElement(root, &quot;EventData&quot;)</span>
+<span id="L43"><a href="#L43" aria-label="Line 43">  43</a>     for name, value in value[&quot;EventData&quot;].items():</span>
+<span id="L44"><a href="#L44" aria-label="Line 44">  44</a>         ET.SubElement(data, &quot;Data&quot;, Name=name).text = value</span>
+<span id="L45"><a href="#L45" aria-label="Line 45">  45</a>     return ET.tostring(root, encoding=&quot;unicode&quot;)</span>
+<span id="L46"><a href="#L46" aria-label="Line 46">  46</a> </span>
+<span id="L47"><a href="#L47" aria-label="Line 47">  47</a> </span>
+<span id="L48"><a href="#L48" aria-label="Line 48">  48</a> @pytest.mark.parametrize(&quot;format&quot;, [&quot;json&quot;, &quot;xml&quot;])</span>
+<span id="L49"><a href="#L49" aria-label="Line 49">  49</a> @pytest.mark.parametrize(</span>
+<span id="L50"><a href="#L50" aria-label="Line 50">  50</a>     &quot;change&quot;,</span>
+<span id="L51"><a href="#L51" aria-label="Line 51">  51</a>     [</span>
+<span id="L52"><a href="#L52" aria-label="Line 52">  52</a>         {&quot;Channel&quot;: &quot;Application&quot;},</span>
+<span id="L53"><a href="#L53" aria-label="Line 53">  53</a>         {&quot;Provider&quot;: {&quot;Name&quot;: &quot;Other-Provider&quot;}},</span>
+<span id="L54"><a href="#L54" aria-label="Line 54">  54</a>         {&quot;Provider&quot;: {&quot;Guid&quot;: &quot;{00000000-0000-0000-0000-000000000000}&quot;}},</span>
+<span id="L55"><a href="#L55" aria-label="Line 55">  55</a>         {&quot;Provider&quot;: {&quot;Name&quot;: SECURITY_PROVIDER, &quot;Guid&quot;: &quot;not-a-guid&quot;}},</span>
+<span id="L56"><a href="#L56" aria-label="Line 56">  56</a>         {&quot;Provider&quot;: {&quot;Name&quot;: &quot;Other&quot;, &quot;Guid&quot;: GUID}},</span>
+<span id="L57"><a href="#L57" aria-label="Line 57">  57</a>         {&quot;Provider&quot;: {}},</span>
+<span id="L58"><a href="#L58" aria-label="Line 58">  58</a>         {&quot;Channel&quot;: &quot;&quot;},</span>
+<span id="L59"><a href="#L59" aria-label="Line 59">  59</a>     ],</span>
+<span id="L60"><a href="#L60" aria-label="Line 60">  60</a> )</span>
+<span id="L61"><a href="#L61" aria-label="Line 61">  61</a> def test_conflicting_source_rejected(format, change):</span>
+<span id="L62"><a href="#L62" aria-label="Line 62">  62</a>     value = record()</span>
+<span id="L63"><a href="#L63" aria-label="Line 63">  63</a>     value[&quot;System&quot;].update(change)</span>
+<span id="L64"><a href="#L64" aria-label="Line 64">  64</a>     result = parse(xml(value) if format == &quot;xml&quot; else json.dumps(value), format)</span>
+<span id="L65"><a href="#L65" aria-label="Line 65">  65</a>     assert result.events == [] and result.rejected == 1</span>
+<span id="L66"><a href="#L66" aria-label="Line 66">  66</a>     assert result.errors[0][&quot;reason&quot;].startswith(&quot;Windows source rejected:&quot;)</span>
+<span id="L67"><a href="#L67" aria-label="Line 67">  67</a> </span>
+<span id="L68"><a href="#L68" aria-label="Line 68">  68</a> </span>
+<span id="L69"><a href="#L69" aria-label="Line 69">  69</a> @pytest.mark.parametrize(</span>
+<span id="L70"><a href="#L70" aria-label="Line 70">  70</a>     &quot;provider&quot;,</span>
+<span id="L71"><a href="#L71" aria-label="Line 71">  71</a>     [</span>
+<span id="L72"><a href="#L72" aria-label="Line 72">  72</a>         SECURITY_PROVIDER,</span>
+<span id="L73"><a href="#L73" aria-label="Line 73">  73</a>         {&quot;Name&quot;: SECURITY_PROVIDER, &quot;Guid&quot;: GUID},</span>
+<span id="L74"><a href="#L74" aria-label="Line 74">  74</a>         {&quot;@Name&quot;: SECURITY_PROVIDER, &quot;@Guid&quot;: GUID.lower()},</span>
+<span id="L75"><a href="#L75" aria-label="Line 75">  75</a>         {&quot;Guid&quot;: GUID},</span>
+<span id="L76"><a href="#L76" aria-label="Line 76">  76</a>         {&quot;Name&quot;: SECURITY_PROVIDER.lower()},</span>
+<span id="L77"><a href="#L77" aria-label="Line 77">  77</a>     ],</span>
+<span id="L78"><a href="#L78" aria-label="Line 78">  78</a> )</span>
+<span id="L79"><a href="#L79" aria-label="Line 79">  79</a> def test_json_valid_provider_forms_preserve_identity(provider):</span>
+<span id="L80"><a href="#L80" aria-label="Line 80">  80</a>     baseline = record()</span>
+<span id="L81"><a href="#L81" aria-label="Line 81">  81</a>     candidate = deepcopy(baseline)</span>
+<span id="L82"><a href="#L82" aria-label="Line 82">  82</a>     candidate[&quot;System&quot;].update(Provider=provider, Channel=&quot;security&quot;)</span>
+<span id="L83"><a href="#L83" aria-label="Line 83">  83</a>     assert (</span>
+<span id="L84"><a href="#L84" aria-label="Line 84">  84</a>         parse(json.dumps(candidate)).events[0].id</span>
+<span id="L85"><a href="#L85" aria-label="Line 85">  85</a>         == parse(json.dumps(baseline)).events[0].id</span>
+<span id="L86"><a href="#L86" aria-label="Line 86">  86</a>     )</span>
+<span id="L87"><a href="#L87" aria-label="Line 87">  87</a> </span>
+<span id="L88"><a href="#L88" aria-label="Line 88">  88</a> </span>
+<span id="L89"><a href="#L89" aria-label="Line 89">  89</a> @pytest.mark.parametrize(&quot;channel&quot;, [True, None, {}, []])</span>
+<span id="L90"><a href="#L90" aria-label="Line 90">  90</a> def test_explicit_invalid_channel_is_not_absence(channel):</span>
+<span id="L91"><a href="#L91" aria-label="Line 91">  91</a>     value = record()</span>
+<span id="L92"><a href="#L92" aria-label="Line 92">  92</a>     value[&quot;System&quot;][&quot;Channel&quot;] = channel</span>
+<span id="L93"><a href="#L93" aria-label="Line 93">  93</a>     assert parse(json.dumps(value)).rejected == 1</span>
+<span id="L94"><a href="#L94" aria-label="Line 94">  94</a> </span>
+<span id="L95"><a href="#L95" aria-label="Line 95">  95</a> </span>
+<span id="L96"><a href="#L96" aria-label="Line 96">  96</a> @pytest.mark.parametrize(</span>
+<span id="L97"><a href="#L97" aria-label="Line 97">  97</a>     &quot;provider&quot;,</span>
+<span id="L98"><a href="#L98" aria-label="Line 98">  98</a>     [None, [], &quot;&quot;, {&quot;Name&quot;: None}, {&quot;Name&quot;: SECURITY_PROVIDER, &quot;@Name&quot;: &quot;Other&quot;}],</span>
+<span id="L99"><a href="#L99" aria-label="Line 99">  99</a> )</span>
+<span id="L100"><a href="#L100" aria-label="Line 100"> 100</a> def test_explicit_invalid_provider_is_not_absence(provider):</span>
+<span id="L101"><a href="#L101" aria-label="Line 101"> 101</a>     value = record()</span>
+<span id="L102"><a href="#L102" aria-label="Line 102"> 102</a>     value[&quot;System&quot;][&quot;Provider&quot;] = provider</span>
+<span id="L103"><a href="#L103" aria-label="Line 103"> 103</a>     assert parse(json.dumps(value)).rejected == 1</span>
+<span id="L104"><a href="#L104" aria-label="Line 104"> 104</a> </span>
+<span id="L105"><a href="#L105" aria-label="Line 105"> 105</a> </span>
+<span id="L106"><a href="#L106" aria-label="Line 106"> 106</a> @pytest.mark.parametrize(&quot;missing&quot;, [&quot;Channel&quot;, &quot;Provider&quot;, &quot;both&quot;])</span>
+<span id="L107"><a href="#L107" aria-label="Line 107"> 107</a> @pytest.mark.parametrize(&quot;format&quot;, [&quot;json&quot;, &quot;xml&quot;])</span>
+<span id="L108"><a href="#L108" aria-label="Line 108"> 108</a> def test_absent_source_fields_keep_compatibility(missing, format):</span>
+<span id="L109"><a href="#L109" aria-label="Line 109"> 109</a>     value = record()</span>
+<span id="L110"><a href="#L110" aria-label="Line 110"> 110</a>     value[&quot;System&quot;][&quot;Provider&quot;] = {&quot;Name&quot;: SECURITY_PROVIDER, &quot;Guid&quot;: GUID}</span>
+<span id="L111"><a href="#L111" aria-label="Line 111"> 111</a>     if missing in (&quot;Channel&quot;, &quot;both&quot;):</span>
+<span id="L112"><a href="#L112" aria-label="Line 112"> 112</a>         value[&quot;System&quot;].pop(&quot;Channel&quot;)</span>
+<span id="L113"><a href="#L113" aria-label="Line 113"> 113</a>     if missing in (&quot;Provider&quot;, &quot;both&quot;):</span>
+<span id="L114"><a href="#L114" aria-label="Line 114"> 114</a>         value[&quot;System&quot;].pop(&quot;Provider&quot;)</span>
+<span id="L115"><a href="#L115" aria-label="Line 115"> 115</a>     result = parse(xml(value) if format == &quot;xml&quot; else json.dumps(value), format)</span>
+<span id="L116"><a href="#L116" aria-label="Line 116"> 116</a>     assert len(result.events) == 1 and result.rejected == 0</span>
+<span id="L117"><a href="#L117" aria-label="Line 117"> 117</a> </span>
+<span id="L118"><a href="#L118" aria-label="Line 118"> 118</a> </span>
+<span id="L119"><a href="#L119" aria-label="Line 119"> 119</a> def test_xml_provider_attributes_reach_validation_and_json_equivalence():</span>
+<span id="L120"><a href="#L120" aria-label="Line 120"> 120</a>     value = record()</span>
+<span id="L121"><a href="#L121" aria-label="Line 121"> 121</a>     value[&quot;System&quot;][&quot;Provider&quot;] = {&quot;Name&quot;: SECURITY_PROVIDER, &quot;Guid&quot;: GUID}</span>
+<span id="L122"><a href="#L122" aria-label="Line 122"> 122</a>     assert (</span>
+<span id="L123"><a href="#L123" aria-label="Line 123"> 123</a>         parse(xml(value), &quot;xml&quot;).events[0].id == parse(json.dumps(value)).events[0].id</span>
+<span id="L124"><a href="#L124" aria-label="Line 124"> 124</a>     )</span>
+<span id="L125"><a href="#L125" aria-label="Line 125"> 125</a> </span>
+<span id="L126"><a href="#L126" aria-label="Line 126"> 126</a> </span>
+<span id="L127"><a href="#L127" aria-label="Line 127"> 127</a> @pytest.mark.parametrize(</span>
+<span id="L128"><a href="#L128" aria-label="Line 128"> 128</a>     &quot;field,value&quot;, [(&quot;ProviderName&quot;, &quot;Other&quot;), (&quot;ProviderGuid&quot;, &quot;bad&quot;)]</span>
+<span id="L129"><a href="#L129" aria-label="Line 129"> 129</a> )</span>
+<span id="L130"><a href="#L130" aria-label="Line 130"> 130</a> def test_flat_provider_alias_checked(field, value):</span>
+<span id="L131"><a href="#L131" aria-label="Line 131"> 131</a>     obj = record()</span>
+<span id="L132"><a href="#L132" aria-label="Line 132"> 132</a>     obj[&quot;System&quot;][field] = value</span>
+<span id="L133"><a href="#L133" aria-label="Line 133"> 133</a>     assert parse(json.dumps(obj)).rejected == 1</span>
+<span id="L134"><a href="#L134" aria-label="Line 134"> 134</a> </span>
+<span id="L135"><a href="#L135" aria-label="Line 135"> 135</a> </span>
+<span id="L136"><a href="#L136" aria-label="Line 136"> 136</a> def test_wrong_source_cannot_generate_alert_and_partial_import_survives(client):</span>
+<span id="L137"><a href="#L137" aria-label="Line 137"> 137</a>     bad = []</span>
+<span id="L138"><a href="#L138" aria-label="Line 138"> 138</a>     for i in range(5):</span>
+<span id="L139"><a href="#L139" aria-label="Line 139"> 139</a>         obj = record()</span>
+<span id="L140"><a href="#L140" aria-label="Line 140"> 140</a>         obj[&quot;System&quot;].update(</span>
+<span id="L141"><a href="#L141" aria-label="Line 141"> 141</a>             Channel=&quot;Application&quot;, Provider={&quot;Name&quot;: &quot;Other&quot;}, EventRecordID=str(i)</span>
+<span id="L142"><a href="#L142" aria-label="Line 142"> 142</a>         )</span>
+<span id="L143"><a href="#L143" aria-label="Line 143"> 143</a>         bad.append(obj)</span>
+<span id="L144"><a href="#L144" aria-label="Line 144"> 144</a>     result = client.post(</span>
+<span id="L145"><a href="#L145" aria-label="Line 145"> 145</a>         &quot;/api/import&quot;, files={&quot;file&quot;: (&quot;bad.json&quot;, json.dumps(bad))}</span>
+<span id="L146"><a href="#L146" aria-label="Line 146"> 146</a>     ).json()</span>
+<span id="L147"><a href="#L147" aria-label="Line 147"> 147</a>     assert (</span>
+<span id="L148"><a href="#L148" aria-label="Line 148"> 148</a>         result[&quot;rejected&quot;] == 5</span>
+<span id="L149"><a href="#L149" aria-label="Line 149"> 149</a>         and result[&quot;inserted&quot;] == 0</span>
+<span id="L150"><a href="#L150" aria-label="Line 150"> 150</a>         and result[&quot;alerts_total&quot;] == 0</span>
+<span id="L151"><a href="#L151" aria-label="Line 151"> 151</a>     )</span>
+<span id="L152"><a href="#L152" aria-label="Line 152"> 152</a>     good = record()</span>
+<span id="L153"><a href="#L153" aria-label="Line 153"> 153</a>     good[&quot;System&quot;][&quot;Provider&quot;] = {&quot;Name&quot;: SECURITY_PROVIDER, &quot;Guid&quot;: GUID}</span>
+<span id="L154"><a href="#L154" aria-label="Line 154"> 154</a>     result = client.post(</span>
+<span id="L155"><a href="#L155" aria-label="Line 155"> 155</a>         &quot;/api/import&quot;, files={&quot;file&quot;: (&quot;mixed.json&quot;, json.dumps([bad[0], good]))}</span>
+<span id="L156"><a href="#L156" aria-label="Line 156"> 156</a>     ).json()</span>
+<span id="L157"><a href="#L157" aria-label="Line 157"> 157</a>     assert result[&quot;inserted&quot;] == 1 and result[&quot;rejected&quot;] == 1</span></code></pre></main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

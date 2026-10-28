@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>tests/test_examples.py · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../../docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1>tests/test_examples.py</h1><p>Repository source snapshot packaged with this release.</p><pre class="source-code"><code><span id="L1"><a href="#L1" aria-label="Line 1">   1</a> from tools.verify_examples import collect, verify</span>
+<span id="L2"><a href="#L2" aria-label="Line 2">   2</a> </span>
+<span id="L3"><a href="#L3" aria-label="Line 3">   3</a> </span>
+<span id="L4"><a href="#L4" aria-label="Line 4">   4</a> def test_documented_examples_match_engine_and_evidence():</span>
+<span id="L5"><a href="#L5" aria-label="Line 5">   5</a>     verify()</span>
+<span id="L6"><a href="#L6" aria-label="Line 6">   6</a> </span>
+<span id="L7"><a href="#L7" aria-label="Line 7">   7</a> </span>
+<span id="L8"><a href="#L8" aria-label="Line 8">   8</a> def test_demo_rules_have_expected_independent_counts():</span>
+<span id="L9"><a href="#L9" aria-label="Line 9">   9</a>     result = collect()</span>
+<span id="L10"><a href="#L10" aria-label="Line 10">  10</a>     assert result[&quot;first_import&quot;] == {</span>
+<span id="L11"><a href="#L11" aria-label="Line 11">  11</a>         &quot;inserted&quot;: 85,</span>
+<span id="L12"><a href="#L12" aria-label="Line 12">  12</a>         &quot;duplicates&quot;: 0,</span>
+<span id="L13"><a href="#L13" aria-label="Line 13">  13</a>         &quot;alerts_total&quot;: 5,</span>
+<span id="L14"><a href="#L14" aria-label="Line 14">  14</a>     }</span>
+<span id="L15"><a href="#L15" aria-label="Line 15">  15</a>     assert result[&quot;second_import&quot;] == {</span>
+<span id="L16"><a href="#L16" aria-label="Line 16">  16</a>         &quot;inserted&quot;: 0,</span>
+<span id="L17"><a href="#L17" aria-label="Line 17">  17</a>         &quot;duplicates&quot;: 85,</span>
+<span id="L18"><a href="#L18" aria-label="Line 18">  18</a>         &quot;alerts_total&quot;: 5,</span>
+<span id="L19"><a href="#L19" aria-label="Line 19">  19</a>     }</span>
+<span id="L20"><a href="#L20" aria-label="Line 20">  20</a>     expected = {</span>
+<span id="L21"><a href="#L21" aria-label="Line 21">  21</a>         &quot;ssh_brute_force&quot;: (7, 0),</span>
+<span id="L22"><a href="#L22" aria-label="Line 22">  22</a>         &quot;ssh_success_after_failures&quot;: (4, 1),</span>
+<span id="L23"><a href="#L23" aria-label="Line 23">  23</a>         &quot;windows_brute_force&quot;: (6, 0),</span>
+<span id="L24"><a href="#L24" aria-label="Line 24">  24</a>         &quot;windows_success_after_failures&quot;: (4, 1),</span>
+<span id="L25"><a href="#L25" aria-label="Line 25">  25</a>         &quot;sudo_failures&quot;: (4, 0),</span>
+<span id="L26"><a href="#L26" aria-label="Line 26">  26</a>     }</span>
+<span id="L27"><a href="#L27" aria-label="Line 27">  27</a>     assert set(result[&quot;scenarios&quot;]) == set(expected)</span>
+<span id="L28"><a href="#L28" aria-label="Line 28">  28</a>     for rule, (failures, successes) in expected.items():</span>
+<span id="L29"><a href="#L29" aria-label="Line 29">  29</a>         summary = result[&quot;scenarios&quot;][rule][&quot;summary&quot;]</span>
+<span id="L30"><a href="#L30" aria-label="Line 30">  30</a>         assert (summary[&quot;failure_count&quot;], summary[&quot;success_count&quot;]) == (</span>
+<span id="L31"><a href="#L31" aria-label="Line 31">  31</a>             failures,</span>
+<span id="L32"><a href="#L32" aria-label="Line 32">  32</a>             successes,</span>
+<span id="L33"><a href="#L33" aria-label="Line 33">  33</a>         )</span></code></pre></main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

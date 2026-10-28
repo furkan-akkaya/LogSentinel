@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Security model · LogSentinel</title><link rel="stylesheet" href="../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="security-model">Security model</h1>
+<p>LogSentinel is a single-user, local file-analysis tool. It has <strong>no authentication or authorization</strong>. Run it on a trusted workstation and keep the listening port bound to loopback. It is not suitable for a shared server, LAN service, or public deployment.</p>
+<h2 id="defaults">Defaults</h2>
+<ul>
+<li>Native instructions bind Uvicorn to <code>127.0.0.1</code>.</li>
+<li>Compose publishes only <code>127.0.0.1:8765</code> by default and uses a non-root UID, read-only root filesystem, dropped capabilities and <code>no-new-privileges</code>.</li>
+<li>No host folders, operating system logs, Docker socket, or privileged resources are mounted.</li>
+<li>Allowed HTTP hosts are local names. Cross-origin mutating requests are rejected when an Origin header is present.</li>
+<li>Request bytes are capped before multipart parsing. File size and record counts have additional limits.</li>
+<li>XML entities and DTD expansion are rejected using <code>defusedxml</code>.</li>
+<li>User-supplied SQL filter values are parameters. UI fields are HTML-escaped, including raw logs.</li>
+<li>CSP restricts scripts, styles and network requests to the app. No CDN or analytics scripts are included.</li>
+<li>Native FastAPI telemetry and exporter auto-configuration are explicitly disabled.</li>
+<li>New native data directories use owner-only permissions on POSIX; the database uses mode <code>0600</code>.</li>
+<li>Imported filenames are display metadata. They are not used to construct output paths.</li>
+<li>Explicit Windows channel/provider contradictions are rejected. Missing declarations remain compatible with simplified exports, so this does not authenticate an imported source.</li>
+</ul>
+<p>SHA-256 event identities support duplicate control. They are not file signatures, source authentication, or evidence that data was collected from a real host. Generated documentation contains only repository source and synthetic examples.</p>
+<p>These boundaries reduce browser-origin risks but do not restrict other local processes. Host validation and Origin checks are not user authentication. Do not place an unauthenticated reverse proxy in front of the service.</p>
+<h2 id="sensitive-data">Sensitive data</h2>
+<p>Raw logs can contain usernames, hostnames, IPs, terminal paths and other private data. They are stored in plaintext SQLite and returned through the local API. The app does not redact or encrypt them. Protect the data directory and Docker volume using operating system permissions and disk encryption. Do not commit actual security logs to a public repository.</p>
+<p>The <code>.gitignore</code> excludes default databases, data directories, environment files and Python caches. It cannot recognize sensitive logs stored under arbitrary filenames. Review files before publishing. The bundled samples are entirely synthetic.</p>
+<p>Stop the application before copying a SQLite database for backup. A live WAL database also needs its WAL state; copying only the main file while it is running can omit recent transactions. No online backup feature is provided.</p>
+<h2 id="responsible-use-and-reporting">Responsible use and reporting</h2>
+<p>The app analyzes existing logs and does not launch attacks or collect credentials. Treat detections as triage leads. Thresholds and incomplete source context can produce false positives or missed detections.</p>
+<p>For a vulnerability in your fork, use GitHub private vulnerability reporting if enabled. Avoid posting real log contents or secrets in public issues. No hosted reporting service or support commitment is provided by this repository.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

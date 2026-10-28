@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Local security log analysis with transparent detection rules."
+    />
+    <title>LogSentinel · Security workspace</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%2327d9a1'/%3E%3Cpath d='M11 9h18v13l-9 9-9-9z' fill='%230c1514'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="workspace">
+      <aside class="sidebar">
+        <a class="brand" href="#dashboard" aria-label="LogSentinel home"
+          ><span class="brand-icon">◈</span
+          ><span>LogSentinel<small>SECURITY WORKSPACE</small></span></a
+        >
+        <div class="workspace-tag">
+          <span class="online-dot"></span> Local environment
+          <span class="tag">v1.1</span>
+        </div>
+        <div class="nav-label">WORKSPACE</div>
+        <nav aria-label="Main navigation">
+          <a href="#dashboard" data-page="dashboard"
+            ><span class="nav-icon">▦</span>Dashboard</a
+          >
+          <a href="#logs" data-page="logs"
+            ><span class="nav-icon">≡</span>Log Explorer</a
+          >
+          <a href="#alerts" data-page="alerts"
+            ><span class="nav-icon">◇</span>Security Alerts<span
+              id="nav-alert-count"
+              class="nav-count"
+              >0</span
+            ></a
+          >
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="local-note">
+            <span class="online-dot"></span> Your logs stay here
+            <p>Local analysis. No cloud services.</p>
+          </div>
+          <button class="settings-link" id="settings-open" data-settings-open>
+            <span>⚙</span> Detection settings
+          </button>
+          <a href="/docs" target="_blank" rel="noopener" class="api-link"
+            >API documentation <span>↗</span></a
+          >
+        </div>
+      </aside>
+      <div class="main-shell">
+        <header class="topbar">
+          <span
+            >Workspace <span class="crumb">/</span>
+            <span id="breadcrumb">Dashboard</span></span
+          >
+          <div>
+            <span class="online-dot" id="engine-dot"></span
+            ><span id="engine-status">Connecting…</span
+            ><button
+              class="icon-button mobile-settings"
+              data-settings-open
+              aria-label="Detection settings"
+            >
+              ⚙</button
+            ><span class="avatar">LS</span>
+          </div>
+        </header>
+        <main>
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow">AUTHENTICATION MONITORING</div>
+              <h1 id="page-title">Security overview</h1>
+              <p id="page-description">
+                A clear view of your authentication activity and detected
+                threats.
+              </p>
+            </div>
+            <div class="heading-actions">
+              <a
+                class="button secondary"
+                href="/static/guides/docs/INDEX.html"
+                target="_blank"
+                rel="noopener"
+                >Project guide ↗</a
+              >
+              <button class="button secondary" id="load-demo">
+                ↻ Load demo</button
+              ><button class="button primary" id="import-open">
+                + Import logs
+              </button>
+            </div>
+          </div>
+          <div id="page-content" aria-live="polite"></div>
+          <footer>
+            <span><span class="online-dot"></span> Local detection engine</span
+            ><span
+              >LogSentinel · Mini SIEM <span class="footer-divider">/</span> All
+              timestamps in UTC</span
+            >
+          </footer>
+        </main>
+      </div>
+    </div>
+    <dialog id="import-dialog" aria-labelledby="import-title">
+      <div class="dialog-heading">
+        <div>
+          <div class="eyebrow">DATA INGESTION</div>
+          <h2 id="import-title">Import security logs</h2>
+        </div>
+        <button class="icon-button" data-close aria-label="Close import">
+          ×
+        </button>
+      </div>
+      <p class="muted">
+        UTF-8 Linux auth logs or Windows Security XML / JSON. Maximum 5 MiB.
+      </p>
+      <form id="import-form">
+        <label class="file-area"
+          >Choose a log file<input
+            type="file"
+            name="file"
+            required
+            accept=".log,.txt,.xml,.json,.jsonl,.ndjson"
+        /></label>
+        <div class="form-grid">
+          <label
+            >Format<select name="format">
+              <option value="auto">Auto-detect</option>
+              <option value="linux">Linux syslog</option>
+              <option value="xml">Windows XML</option>
+              <option value="json">Windows JSON / NDJSON</option>
+            </select></label
+          ><label
+            >Year for yearless syslog<input
+              name="year"
+              id="import-year"
+              type="number"
+              min="1970"
+              max="2100"
+              required /></label
+          ><label
+            >Offset for timestamps without timezone<input
+              name="timezone_offset"
+              value="+00:00"
+              pattern="[+-][0-9]{2}:[0-9]{2}"
+              required
+          /></label>
+        </div>
+        <p class="hint">
+          Explicit timestamps keep their timezone. Yearless records use the year
+          above; split files at year boundaries.
+        </p>
+        <button class="button primary" type="submit">Import & analyze</button>
+      </form>
+    </dialog>
+    <dialog id="settings-dialog" aria-labelledby="settings-title">
+      <div class="dialog-heading">
+        <div>
+          <div class="eyebrow">DETECTION ENGINE</div>
+          <h2 id="settings-title">Detection settings</h2>
+        </div>
+        <button class="icon-button" data-close aria-label="Close settings">
+          ×
+        </button>
+      </div>
+      <p class="muted">
+        Changes reanalyze all stored events. Status survives only while the same
+        alert remains present. Changed IDs or removed alerts can lose
+        investigation status; there is no permanent case history.
+      </p>
+      <form id="settings-form">
+        <div class="form-grid">
+          <label
+            >SSH failure threshold<input
+              name="ssh_threshold"
+              type="number"
+              min="2"
+              max="100"
+              required /></label
+          ><label
+            >Windows failure threshold<input
+              name="windows_threshold"
+              type="number"
+              min="2"
+              max="100"
+              required /></label
+          ><label
+            >Sudo failure threshold<input
+              name="sudo_threshold"
+              type="number"
+              min="2"
+              max="100"
+              required /></label
+          ><label
+            >Failures before success<input
+              name="success_threshold"
+              type="number"
+              min="2"
+              max="100"
+              required /></label
+          ><label
+            >Correlation window (seconds)<input
+              name="window_seconds"
+              type="number"
+              min="10"
+              max="3600"
+              required
+          /></label>
+        </div>
+        <p class="hint">
+          SSH: host + IP + user. Windows also requires domain and logon type.
+          Sudo: host + invoking user + terminal.
+        </p>
+        <button class="button primary" type="submit">Save & reanalyze</button>
+      </form>
+    </dialog>
+    <dialog
+      id="detail-dialog"
+      class="detail-dialog"
+      aria-label="Investigation details"
+    >
+      <div id="detail-content"></div>
+    </dialog>
+    <div id="toast" role="status" hidden></div>
+  </body>
+</html>
