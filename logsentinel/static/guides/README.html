@@ -1,6 +1,8 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LogSentinel · LogSentinel</title><link rel="stylesheet" href="../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="logsentinel">LogSentinel</h1>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LogEssential · LogEssential</title><link rel="stylesheet" href="../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="logessential">LogEssential</h1>
+<p>LogEssential, formerly LogSentinel, is the same local application. The <code>logsentinel</code> package, database path and GitHub repository retain their existing names.
+<strong>1.2.0b1 · local-use beta</strong></p>
 <p><strong>Mini SIEM &amp; Security Log Analyzer</strong> — a local application that turns Linux and Windows authentication files into explainable security alerts.</p>
-<p>Authentication records describe individual attempts. LogSentinel groups related records so a reviewer can see repeated failures and success-after-failure sequences. Each alert links to its matching identity, threshold, and original evidence.</p>
+<p>Authentication records describe individual attempts. LogEssential groups related records so a reviewer can see repeated failures and success-after-failure sequences. Each alert links to its matching identity, threshold, and original evidence.</p>
 <p>The working demo produces <strong>85 events and five alerts across four hosts</strong>. Visitors can inspect alerts, replay evidence in Detection Lab, and save Case Notes without a lab server. Technical readers can follow the same records through the code and tests.</p>
 <p>Start with the <a href="docs/INDEX.html">project guide</a>, <a href="docs/learning/HOW_IT_WORKS.html">How it works</a>, or the <a href="docs/reports/SSH_CASE_STUDY.html">synthetic SSH case report</a>. The app also serves these guides locally through <strong>Project guide</strong>.</p>
 <h2 id="learn-by-investigating">Learn by investigating</h2>
@@ -11,6 +13,7 @@
     B --&gt; E[Manual Case Notes + saved evidence]
 </code></pre>
 <p><strong>Detection Lab</strong> uses the production Python engine. Change a threshold or window and replay each event without changing workspace settings. Five isolated synthetic experiments expose sequence detection, exact time boundaries, account grouping, excluded SSH methods, and Windows logon contexts. Open the lab directly from any alert with at most 200 evidence records.</p>
+<p>A bundled standalone lab at <code>http://127.0.0.1:8765/static/learning-demo.html</code> includes 280 engine-measured parameter combinations.</p>
 <p><strong>Case Notes</strong> separates observations, hypotheses and next steps. Notes retain a bounded evidence snapshot even when rule changes remove an alert. Each save replaces the previous snapshot; this is not an audit history. Export snapshots as local JSON files.</p>
 <p>Dataset labels distinguish normalized matches to bundled synthetic records from other unverified imports. The application does not assume that an uploaded file is real.</p>
 <p>See <a href="docs/LEARNING_WORKSPACE.html">the learning workspace, research and design rationale</a>.</p>
@@ -27,8 +30,8 @@
 <pre><code class="language-sh">docker compose up --build -d
 </code></pre>
 <p>Open <strong>http://127.0.0.1:8765</strong> and select <strong>Load demo</strong>. On a fresh database, the bundled synthetic files produce <strong>85 events and 5 alerts</strong> with default thresholds. Loading them again adds zero events and zero alerts. The demo is dated October 26, 2026; the dashboard displays imported event time, not the current date.</p>
-<p><img src="docs/screenshots/dashboard-v1.2.jpg" alt="LogSentinel v1.2 dashboard" /></p>
-<p><img src="docs/screenshots/detection-lab.jpg" alt="Detection Lab using the production engine" /></p>
+<p><img src="docs/screenshots/dashboard.png" alt="LogEssential v1.2 dashboard" /></p>
+<p><img src="docs/screenshots/detection-lab.png" alt="Detection Lab using the production engine" /></p>
 <p>More real screenshots: <a href="docs/screenshots/log-explorer.png">Log Explorer</a>, <a href="docs/screenshots/security-alerts.png">Security Alerts</a>, <a href="docs/screenshots/alert-evidence.png">evidence timeline</a>, and <a href="docs/screenshots/mobile.png">mobile layout</a>.</p>
 <p>The update also shows <a href="docs/screenshots/windows-context.png">Windows correlation context</a> and the <a href="docs/screenshots/how-it-works.png">offline walkthrough</a>.</p>
 <p>Docker Desktop is the recommended path for Windows and macOS. Linux requires Docker Engine and the Compose plugin. The image uses a standard Python base and does not require host log mounts or privileged access.</p>
@@ -148,7 +151,7 @@ python -m pytest
 python -m playwright install chromium
 python tests/browser_smoke.py
 </code></pre>
-<p>The existing browser script starts an isolated local server and database. It covers the original workspace; new lab and notes checks are described in <a href="docs/VALIDATION_V1_2.html">v1.2 validation</a>. It verifies demo loading, all screens, raw evidence, filters, import, settings, investigation status, and mobile layout. See <a href="docs/VALIDATION.html">validation results</a> for the actual tested environment and limitations.</p>
+<p>The existing browser script starts an isolated local server and database. It covers the original workspace plus isolated lab replay, saved/reopened notes, evidence navigation and JSON export. See <a href="docs/VALIDATION_PUBLIC_BETA.html">current beta validation</a>. It verifies demo loading, all screens, raw evidence, filters, import, settings, investigation status, and mobile layout. See <a href="docs/VALIDATION.html">validation results</a> for the actual tested environment and limitations.</p>
 <p>Reproduce all documented examples with <code>python tools/verify_examples.py</code>. The tool uses a temporary database and compares five alert snapshots and 27 evidence records with the real engine.</p>
 <p>The source documents are in <code>docs/</code>. Offline HTML is generated into the Python package:</p>
 <pre><code class="language-sh">python -m pip install -e '.[docs]'
@@ -160,9 +163,11 @@ python tools/build_guides.py
 <p>Raw logs and normalized identities are stored in plaintext SQLite. Keep the database private. Do not expose the service to a LAN or public network. See <a href="SECURITY.html">SECURITY.md</a> before using sensitive logs.</p>
 <h2 id="portfolio-description">Portfolio description</h2>
 <blockquote>
-<p>LogSentinel normalizes Linux SSH/sudo and Windows Security files into SQLite. Five configurable event-time rules generate evidence-linked alerts. The project includes source validation, duplicate-resistant ingestion, isolated engine experiments, retained analyst notes, measured scenarios, and automated parser, correlation, and API checks. Browser validation is documented with its executed scope.</p>
+<p>LogEssential normalizes Linux SSH/sudo and Windows Security files into SQLite. Five configurable event-time rules generate evidence-linked alerts. The project includes source validation, duplicate-resistant ingestion, isolated engine experiments, retained analyst notes, measured scenarios, and automated parser, correlation, and API checks. Browser validation is documented with its executed scope.</p>
 </blockquote>
 <p>See <a href="docs/PORTFOLIO.html">portfolio presentation</a> for a short Turkish narrative and a demonstration sequence. No personal experience, independent authorship, or production-use claim is implied.</p>
 <h2 id="license">License</h2>
 <p><a href="_source/LICENSE.html">MIT</a>. Bundled logs are synthetic; addresses use private or documentation ranges.</p>
+<h2 id="release-and-updates">Release and updates</h2>
+<p>Use the <a href="docs/RELEASE.html">beta release instructions</a> for verified packages, upgrade backups and rollback. The <a href="CHANGELOG.html">changelog</a> lists this release’s changes. Only source and packages are public; the local service must remain on loopback.</p>
 </main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

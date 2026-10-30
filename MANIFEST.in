@@ -1,0 +1,6 @@
+include CHANGELOG.md LICENSE SECURITY.md CONTRIBUTING.md TESLIM.md requirements.txt Dockerfile compose.yaml .env.example
+recursive-include docs *.md *.json *.jpg *.png *.svg
+recursive-include tests *.py
+recursive-include tools *.py *.html
+recursive-include samples *.log *.json *.xml *.txt
+recursive-exclude * __pycache__ *.py[cod] .DS_Store

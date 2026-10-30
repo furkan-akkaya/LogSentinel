@@ -58,7 +58,7 @@ The sample alone cannot distinguish these explanations. Authentication outcomes 
 
 The SHA-256 event IDs identify normalized records for deduplication. They do not fill these evidence gaps.
 
-## 7. Suggested next checks · not performed by LogSentinel
+## 7. Suggested next checks · not performed by LogEssential
 
 1. Confirm whether the account owner expected this login.
 2. Compare the address against approved access paths and shared gateways.

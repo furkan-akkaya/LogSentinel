@@ -1,8 +1,8 @@
-# How LogSentinel works
+# How LogEssential works
 
 [Project guide](../INDEX.md) · [Technical design](../ARCHITECTURE.md)
 
-LogSentinel turns authentication records into explainable review signals. I use one local service so visitors can reproduce the complete flow without building a lab.
+LogEssential turns authentication records into explainable review signals. I use one local service so visitors can reproduce the complete flow without building a lab.
 
 ![Raw record to investigation](../diagrams/pipeline.svg)
 
@@ -129,7 +129,7 @@ Equivalent Windows XML and JSON exports produce the same ID when their normalize
 
 **This hash is a deduplication key, not source authentication, a digital signature, or proof that an imported file was unchanged.** Identical normalized records can collapse even if they describe separate attempts. Missing optional fields across exports can prevent deduplication.
 
-The first imported raw representation and filename are retained. LogSentinel does not maintain a multi-file provenance history.
+The first imported raw representation and filename are retained. LogEssential does not maintain a multi-file provenance history.
 
 ## 5. Commit events and detections together
 

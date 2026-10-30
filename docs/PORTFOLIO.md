@@ -2,7 +2,7 @@
 
 ## Short English description
 
-LogSentinel is a local mini SIEM for Linux and Windows authentication logs. It normalizes records into SQLite and applies five configurable event-time rules. Each alert includes its matching identity, thresholds, and source evidence. The bundled demo produces 85 events and five explainable alerts without a lab server.
+LogEssential is a local mini SIEM for Linux and Windows authentication logs. It normalizes records into SQLite and applies five configurable event-time rules. Each alert includes its matching identity, thresholds, and source evidence. The bundled demo produces 85 events and five explainable alerts without a lab server.
 
 ## Technical decisions to show
 
@@ -16,7 +16,7 @@ These statements describe the implementation. They do not assert independent aut
 
 ## Kısa Türkçe sunum anlatısı
 
-LogSentinel, Linux ve Windows kimlik doğrulama kayıtlarını inceleyen yerel bir güvenlik analiz projesidir. Amaç, şüpheli giriş örüntülerini kaynak kayıtlarla açıklamaktır.
+LogEssential, Linux ve Windows kimlik doğrulama kayıtlarını inceleyen yerel bir güvenlik analiz projesidir. Amaç, şüpheli giriş örüntülerini kaynak kayıtlarla açıklamaktır.
 
 Uygulama dosyayı okur, olayları ortak şemaya dönüştürür ve SQLite içinde saklar. Beş kural, olay zamanını ve kimlik alanlarını kullanarak uyarı üretir. Kullanıcı her uyarının kanıtlarını arayüzden inceleyebilir.
 

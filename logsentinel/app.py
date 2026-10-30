@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from . import __version__
 from .detection import RULES, correlation_key, detect
 from .guidance import explain_alert
 from .lab import MAX_REPLAY_EVENTS, SCENARIOS, replay, scenario_events
@@ -117,8 +118,8 @@ def create_app(db_path=None):
         yield
 
     app = FastAPI(
-        title="LogSentinel",
-        version="1.2.0",
+        title="LogEssential",
+        version=__version__,
         lifespan=lifespan,
         docs_url=None,
         redoc_url=None,
@@ -159,7 +160,7 @@ def create_app(db_path=None):
     def health():
         with connection(path) as db:
             db.execute("SELECT count(*) FROM events").fetchone()
-        return {"status": "ok", "version": "1.2.0"}
+        return {"status": "ok", "version": __version__}
 
     @app.post("/api/import")
     def import_logs(

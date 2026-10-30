@@ -1,8 +1,11 @@
-# LogSentinel
+# LogEssential
+
+LogEssential, formerly LogSentinel, is the same local application. The `logsentinel` package, database path and GitHub repository retain their existing names.
+**1.2.0b1 · local-use beta**
 
 **Mini SIEM & Security Log Analyzer** — a local application that turns Linux and Windows authentication files into explainable security alerts.
 
-Authentication records describe individual attempts. LogSentinel groups related records so a reviewer can see repeated failures and success-after-failure sequences. Each alert links to its matching identity, threshold, and original evidence.
+Authentication records describe individual attempts. LogEssential groups related records so a reviewer can see repeated failures and success-after-failure sequences. Each alert links to its matching identity, threshold, and original evidence.
 
 The working demo produces **85 events and five alerts across four hosts**. Visitors can inspect alerts, replay evidence in Detection Lab, and save Case Notes without a lab server. Technical readers can follow the same records through the code and tests.
 
@@ -19,6 +22,8 @@ flowchart LR
 ```
 
 **Detection Lab** uses the production Python engine. Change a threshold or window and replay each event without changing workspace settings. Five isolated synthetic experiments expose sequence detection, exact time boundaries, account grouping, excluded SSH methods, and Windows logon contexts. Open the lab directly from any alert with at most 200 evidence records.
+
+A bundled standalone lab at `http://127.0.0.1:8765/static/learning-demo.html` includes 280 engine-measured parameter combinations.
 
 **Case Notes** separates observations, hypotheses and next steps. Notes retain a bounded evidence snapshot even when rule changes remove an alert. Each save replaces the previous snapshot; this is not an audit history. Export snapshots as local JSON files.
 
@@ -44,9 +49,9 @@ docker compose up --build -d
 
 Open **http://127.0.0.1:8765** and select **Load demo**. On a fresh database, the bundled synthetic files produce **85 events and 5 alerts** with default thresholds. Loading them again adds zero events and zero alerts. The demo is dated October 26, 2026; the dashboard displays imported event time, not the current date.
 
-![LogSentinel v1.2 dashboard](docs/screenshots/dashboard-v1.2.jpg)
+![LogEssential v1.2 dashboard](docs/screenshots/dashboard.png)
 
-![Detection Lab using the production engine](docs/screenshots/detection-lab.jpg)
+![Detection Lab using the production engine](docs/screenshots/detection-lab.png)
 
 More real screenshots: [Log Explorer](docs/screenshots/log-explorer.png), [Security Alerts](docs/screenshots/security-alerts.png), [evidence timeline](docs/screenshots/alert-evidence.png), and [mobile layout](docs/screenshots/mobile.png).
 
@@ -163,7 +168,7 @@ python -m playwright install chromium
 python tests/browser_smoke.py
 ```
 
-The existing browser script starts an isolated local server and database. It covers the original workspace; new lab and notes checks are described in [v1.2 validation](docs/VALIDATION_V1_2.md). It verifies demo loading, all screens, raw evidence, filters, import, settings, investigation status, and mobile layout. See [validation results](docs/VALIDATION.md) for the actual tested environment and limitations.
+The existing browser script starts an isolated local server and database. It covers the original workspace plus isolated lab replay, saved/reopened notes, evidence navigation and JSON export. See [current beta validation](docs/VALIDATION_PUBLIC_BETA.md). It verifies demo loading, all screens, raw evidence, filters, import, settings, investigation status, and mobile layout. See [validation results](docs/VALIDATION.md) for the actual tested environment and limitations.
 
 Reproduce all documented examples with `python tools/verify_examples.py`. The tool uses a temporary database and compares five alert snapshots and 27 evidence records with the real engine.
 
@@ -184,10 +189,14 @@ Raw logs and normalized identities are stored in plaintext SQLite. Keep the data
 
 ## Portfolio description
 
-> LogSentinel normalizes Linux SSH/sudo and Windows Security files into SQLite. Five configurable event-time rules generate evidence-linked alerts. The project includes source validation, duplicate-resistant ingestion, isolated engine experiments, retained analyst notes, measured scenarios, and automated parser, correlation, and API checks. Browser validation is documented with its executed scope.
+> LogEssential normalizes Linux SSH/sudo and Windows Security files into SQLite. Five configurable event-time rules generate evidence-linked alerts. The project includes source validation, duplicate-resistant ingestion, isolated engine experiments, retained analyst notes, measured scenarios, and automated parser, correlation, and API checks. Browser validation is documented with its executed scope.
 
 See [portfolio presentation](docs/PORTFOLIO.md) for a short Turkish narrative and a demonstration sequence. No personal experience, independent authorship, or production-use claim is implied.
 
 ## License
 
 [MIT](LICENSE). Bundled logs are synthetic; addresses use private or documentation ranges.
+
+## Release and updates
+
+Use the [beta release instructions](docs/RELEASE.md) for verified packages, upgrade backups and rollback. The [changelog](CHANGELOG.md) lists this release’s changes. Only source and packages are public; the local service must remain on loopback.

@@ -53,11 +53,11 @@ def run():
         try:
             command("up", "--build", "-d", "--wait", "--wait-timeout", "120")
             assert request("/health")["status"] == "ok"
-            assert request("/health")["version"] == "1.2.0"
+            assert request("/health")["version"] == "1.2.0b1"
             with urllib.request.urlopen(
                 f"http://127.0.0.1:{port}/static/guides/docs/INDEX.html"
             ) as response:
-                assert b"LogSentinel project guide" in response.read()
+                assert b"LogEssential project guide" in response.read()
             assert request("/demo", "POST")["inserted"] == 85
             alert = request("/alerts")["items"][0]["id"]
             explanation = request("/alerts/" + alert)["explanation"]

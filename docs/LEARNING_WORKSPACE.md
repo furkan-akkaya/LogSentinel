@@ -1,6 +1,6 @@
 # Learning through real detections · v1.2
 
-LogSentinel now connects an operational alert to an isolated experiment and a saved investigation. The learning material follows the implemented rules, including their blind spots.
+LogEssential now connects an operational alert to an isolated experiment and a saved investigation. The learning material follows the implemented rules, including their blind spots.
 
 ## Evidence → experiment → reasoning
 
@@ -88,14 +88,14 @@ Existing local request boundaries, input validation, body limits and same-origin
 
 Research date: **October 29, 2026**. Public first-party pages were inspected; no paid labs or authenticated training sessions were completed.
 
-| Source | Observed approach | Adaptation in LogSentinel |
+| Source | Observed approach | Adaptation in LogEssential |
 |---|---|---|
 | [TryHackMe: Log Analysis with SIEM](https://tryhackme.com/room/loganalysiswithsiem) | Investigations start from log sources and concrete questions. | Start learning from an actual alert and its evidence. |
 | [HTB Academy FAQ](https://academy.hackthebox.com/faq) | Short explanations, reproducible examples, hands-on checkpoints. | Small experiments with parameter changes and visible engine results. |
 | [LetsDefend: simulated SIEM alerts](https://letsdefend.io/blog/how-we-generate-simulated-siem-alerts) | Alerts, aligned log context and analyst investigation playbooks. | Separate observation, hypothesis and the next evidence request. |
 | [CyberDefenders: first CyberRange lab](https://help.cyberdefenders.org/en/articles/9978762-your-first-cyberrange-lab) | Evidence artifacts, optional hints and walkthroughs. | Preserve raw records and keep hints behind an explicit reveal. |
 
-The strongest argument against a new lab is interface complexity. LogSentinel already had useful explanations and offline guides. A separate course catalog would duplicate them. The selected lab instead exposes the existing engine and can open directly from an operational alert.
+The strongest argument against a new lab is interface complexity. LogEssential already had useful explanations and offline guides. A separate course catalog would duplicate them. The selected lab instead exposes the existing engine and can open directly from an operational alert.
 
 Gamification, AI verdicts, invented accuracy scores and achievement stories were deliberately omitted. There is no evidence supporting those claims. The technical demonstration is the reproducible connection between source records, rule output and analyst reasoning.
 

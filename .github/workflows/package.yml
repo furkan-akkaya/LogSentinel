@@ -1,0 +1,29 @@
+name: Package and security
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - run: uvx pip-audit -r requirements.txt --disable-pip
+      - run: uv build
+      - run: python3 tools/check_archives.py dist/*.whl dist/*.tar.gz
+      - name: Wheel outside the checkout
+        run: |
+          uv venv /tmp/wheel-check
+          uv pip install --python /tmp/wheel-check/bin/python -r requirements.txt dist/*.whl
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')
+          /tmp/wheel-check/bin/python -I tools/release_smoke.py "$version"
+      - name: Tests from the source archive
+        run: |
+          mkdir /tmp/source
+          tar xzf dist/*.tar.gz -C /tmp/source --strip-components=1
+          uv venv /tmp/source-check
+          uv pip install --python /tmp/source-check/bin/python -r /tmp/source/requirements.txt
+          uv pip install --python /tmp/source-check/bin/python -e '/tmp/source[test,docs]'
+          (cd /tmp/source && /tmp/source-check/bin/python -m pytest)

@@ -214,6 +214,47 @@ def run(screenshots=None):
                         page.keyboard.press("Escape")
                         expect(page.locator("#detail-dialog")).not_to_be_visible()
                         page.set_viewport_size({"width": 1440, "height": 1100})
+                    # The v1.2 flows must use the actual UI and preserve workspace data.
+                    def workspace_state():
+                        return {path: json.load(urllib.request.urlopen(url + "/api/" + path))
+                                for path in ("stats", "settings", "alerts", "notebooks")}
+
+                    before = workspace_state()
+                    page.locator('nav a[data-page="lab"]').click()
+                    page.locator("#lab-scenario").select_option("window_edge")
+                    expect(page.locator(".comparison-strip")).to_contain_text("1 alert")
+                    page.locator("#lab-window_seconds").fill("299")
+                    page.get_by_role("button", name="Run experiment", exact=True).click()
+                    expect(page.locator(".comparison-strip strong").nth(1)).to_have_text("0 alerts")
+                    assert workspace_state() == before
+                    if screenshots:
+                        capture("detection-lab.png")
+                    page.locator('nav a[data-page="alerts"]').click()
+                    ssh_note = next(a for a in actual_alerts if a["rule"] == "ssh_brute_force")
+                    page.locator(f'.row-button[data-alert="{ssh_note["id"]}"]').click()
+                    page.locator('#note-form textarea[name="observation"]').fill("Synthetic failures; intent unknown.")
+                    page.locator('#note-form textarea[name="hypothesis"]').fill("Could be a mistyped password.")
+                    page.locator('#note-form textarea[name="next_step"]').fill("Confirm with account owner.")
+                    page.get_by_role("button", name="Save Case Notes", exact=True).click()
+                    expect(page.locator("#note-saved")).to_contain_text("Saved")
+                    # Evidence links must return to the same investigation.
+                    page.locator("#detail-content [data-event]").first.click()
+                    expect(page.get_by_role("heading", name="Raw source record")).to_be_visible()
+                    page.locator("#return-alert").click()
+                    expect(page.locator('#note-form textarea[name="observation"]')).to_have_value("Synthetic failures; intent unknown.")
+                    page.get_by_role("button", name="Close details").click()
+                    page.locator('nav a[data-page="notebooks"]').click()
+                    page.get_by_role("button", name="Open notes", exact=True).click()
+                    expect(page.locator(".note-text").first).to_have_text("Synthetic failures; intent unknown.")
+                    with page.expect_download() as download_info:
+                        page.get_by_role("button", name="Download JSON snapshot").click()
+                    snapshot = json.loads(Path(download_info.value.path()).read_text())
+                    assert snapshot["note"]["next_step"] == "Confirm with account owner."
+                    assert snapshot["alert_id"] == ssh_note["id"]
+                    if screenshots:
+                        capture("case-notes.png")
+                    page.get_by_role("button", name="Close details").click()
+                    page.locator('nav a[data-page="alerts"]').click()
                     page.get_by_role("button", name="Detection settings").click()
                     page.locator('input[name="ssh_threshold"]').fill("6")
                     page.get_by_role("button", name="Save & reanalyze").click()
@@ -267,14 +308,14 @@ def run(screenshots=None):
                     guide = popup_info.value
                     guide.set_viewport_size({"width": 390, "height": 844})
                     expect(
-                        guide.get_by_role("heading", name="LogSentinel project guide")
+                        guide.get_by_role("heading", name="LogEssential project guide")
                     ).to_be_visible()
                     assert guide.evaluate(
                         "document.documentElement.scrollWidth<=innerWidth"
                     )
                     guide.get_by_role("link", name="How it works", exact=True).click()
                     expect(
-                        guide.get_by_role("heading", name="How LogSentinel works")
+                        guide.get_by_role("heading", name="How LogEssential works")
                     ).to_be_visible()
                     assert guide.evaluate(
                         "document.documentElement.scrollWidth<=innerWidth"

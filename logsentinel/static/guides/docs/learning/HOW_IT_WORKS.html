@@ -1,6 +1,6 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>How LogSentinel works · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="how-logsentinel-works">How LogSentinel works</h1>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>How LogEssential works · LogEssential</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="how-logessential-works">How LogEssential works</h1>
 <p><a href="../INDEX.html">Project guide</a> · <a href="../ARCHITECTURE.html">Technical design</a></p>
-<p>LogSentinel turns authentication records into explainable review signals. I use one local service so visitors can reproduce the complete flow without building a lab.</p>
+<p>LogEssential turns authentication records into explainable review signals. I use one local service so visitors can reproduce the complete flow without building a lab.</p>
 <p><img src="../diagrams/pipeline.svg" alt="Raw record to investigation" /></p>
 <h2 id="1-start-with-actual-source-records">1. Start with actual source records</h2>
 <p>Linux example, from the SSH success-after-failures scenario:</p>
@@ -172,7 +172,7 @@
 <p><code>Event.id</code> hashes normalized time, source, type, host, user, IP, and metadata using SHA-256. Raw formatting and upload filename do not participate.</p>
 <p>Equivalent Windows XML and JSON exports produce the same ID when their normalized fields match. Provider validation does not add provider metadata to the identity. This preserves compatibility with previously imported valid events.</p>
 <p><strong>This hash is a deduplication key, not source authentication, a digital signature, or proof that an imported file was unchanged.</strong> Identical normalized records can collapse even if they describe separate attempts. Missing optional fields across exports can prevent deduplication.</p>
-<p>The first imported raw representation and filename are retained. LogSentinel does not maintain a multi-file provenance history.</p>
+<p>The first imported raw representation and filename are retained. LogEssential does not maintain a multi-file provenance history.</p>
 <h2 id="5-commit-events-and-detections-together">5. Commit events and detections together</h2>
 <p><a href="../../_source/logsentinel/storage.py.html">SQLite storage</a> uses the event ID as a primary key. <code>INSERT OR IGNORE</code> prevents a duplicate event from creating a second row.</p>
 <p>An import transaction inserts events, checks the local event cap, reanalyzes stored data, updates alerts, and commits. Failure rolls back the operation. WAL permits reads while writes serialize.</p>

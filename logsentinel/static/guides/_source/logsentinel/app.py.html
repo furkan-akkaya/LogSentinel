@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>logsentinel/app.py · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../../docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1>logsentinel/app.py</h1><p>Repository source snapshot packaged with this release.</p><pre class="source-code"><code><span id="L1"><a href="#L1" aria-label="Line 1">   1</a> &quot;&quot;&quot;Single-process local web application. No host log privileges required.&quot;&quot;&quot;</span>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>logsentinel/app.py · LogEssential</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="../../docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1>logsentinel/app.py</h1><p>Repository source snapshot packaged with this release.</p><pre class="source-code"><code><span id="L1"><a href="#L1" aria-label="Line 1">   1</a> &quot;&quot;&quot;Single-process local web application. No host log privileges required.&quot;&quot;&quot;</span>
 <span id="L2"><a href="#L2" aria-label="Line 2">   2</a> </span>
 <span id="L3"><a href="#L3" aria-label="Line 3">   3</a> from contextlib import asynccontextmanager</span>
 <span id="L4"><a href="#L4" aria-label="Line 4">   4</a> from datetime import datetime, timezone</span>
@@ -14,542 +14,543 @@
 <span id="L14"><a href="#L14" aria-label="Line 14">  14</a> from pydantic import BaseModel, ConfigDict, Field</span>
 <span id="L15"><a href="#L15" aria-label="Line 15">  15</a> from starlette.middleware.trustedhost import TrustedHostMiddleware</span>
 <span id="L16"><a href="#L16" aria-label="Line 16">  16</a> </span>
-<span id="L17"><a href="#L17" aria-label="Line 17">  17</a> from .detection import RULES, correlation_key, detect</span>
-<span id="L18"><a href="#L18" aria-label="Line 18">  18</a> from .guidance import explain_alert</span>
-<span id="L19"><a href="#L19" aria-label="Line 19">  19</a> from .lab import MAX_REPLAY_EVENTS, SCENARIOS, replay, scenario_events</span>
-<span id="L20"><a href="#L20" aria-label="Line 20">  20</a> from .parsers import parse, timestamp</span>
-<span id="L21"><a href="#L21" aria-label="Line 21">  21</a> from .provenance import dataset_summary</span>
-<span id="L22"><a href="#L22" aria-label="Line 22">  22</a> from .storage import connection, event_dict, ingest, initialize, reanalyze, settings</span>
-<span id="L23"><a href="#L23" aria-label="Line 23">  23</a> </span>
-<span id="L24"><a href="#L24" aria-label="Line 24">  24</a> ROOT = Path(__file__).parent</span>
-<span id="L25"><a href="#L25" aria-label="Line 25">  25</a> MAX_UPLOAD = 5 * 1024 * 1024</span>
-<span id="L26"><a href="#L26" aria-label="Line 26">  26</a> MAX_NOTE_EVIDENCE = 200</span>
-<span id="L27"><a href="#L27" aria-label="Line 27">  27</a> </span>
+<span id="L17"><a href="#L17" aria-label="Line 17">  17</a> from . import __version__</span>
+<span id="L18"><a href="#L18" aria-label="Line 18">  18</a> from .detection import RULES, correlation_key, detect</span>
+<span id="L19"><a href="#L19" aria-label="Line 19">  19</a> from .guidance import explain_alert</span>
+<span id="L20"><a href="#L20" aria-label="Line 20">  20</a> from .lab import MAX_REPLAY_EVENTS, SCENARIOS, replay, scenario_events</span>
+<span id="L21"><a href="#L21" aria-label="Line 21">  21</a> from .parsers import parse, timestamp</span>
+<span id="L22"><a href="#L22" aria-label="Line 22">  22</a> from .provenance import dataset_summary</span>
+<span id="L23"><a href="#L23" aria-label="Line 23">  23</a> from .storage import connection, event_dict, ingest, initialize, reanalyze, settings</span>
+<span id="L24"><a href="#L24" aria-label="Line 24">  24</a> </span>
+<span id="L25"><a href="#L25" aria-label="Line 25">  25</a> ROOT = Path(__file__).parent</span>
+<span id="L26"><a href="#L26" aria-label="Line 26">  26</a> MAX_UPLOAD = 5 * 1024 * 1024</span>
+<span id="L27"><a href="#L27" aria-label="Line 27">  27</a> MAX_NOTE_EVIDENCE = 200</span>
 <span id="L28"><a href="#L28" aria-label="Line 28">  28</a> </span>
-<span id="L29"><a href="#L29" aria-label="Line 29">  29</a> class LocalBoundary:</span>
-<span id="L30"><a href="#L30" aria-label="Line 30">  30</a>     &quot;&quot;&quot;Bound request bodies before multipart parsing; reject cross-origin writes.&quot;&quot;&quot;</span>
-<span id="L31"><a href="#L31" aria-label="Line 31">  31</a> </span>
-<span id="L32"><a href="#L32" aria-label="Line 32">  32</a>     def __init__(self, app):</span>
-<span id="L33"><a href="#L33" aria-label="Line 33">  33</a>         self.app = app</span>
-<span id="L34"><a href="#L34" aria-label="Line 34">  34</a> </span>
-<span id="L35"><a href="#L35" aria-label="Line 35">  35</a>     async def __call__(self, scope, receive, send):</span>
-<span id="L36"><a href="#L36" aria-label="Line 36">  36</a>         if scope[&quot;type&quot;] != &quot;http&quot;:</span>
-<span id="L37"><a href="#L37" aria-label="Line 37">  37</a>             return await self.app(scope, receive, send)</span>
-<span id="L38"><a href="#L38" aria-label="Line 38">  38</a>         headers = dict(scope[&quot;headers&quot;])</span>
-<span id="L39"><a href="#L39" aria-label="Line 39">  39</a>         mutating = scope[&quot;method&quot;] in (&quot;POST&quot;, &quot;PUT&quot;, &quot;PATCH&quot;, &quot;DELETE&quot;)</span>
-<span id="L40"><a href="#L40" aria-label="Line 40">  40</a>         origin = headers.get(b&quot;origin&quot;)</span>
-<span id="L41"><a href="#L41" aria-label="Line 41">  41</a>         host = headers.get(b&quot;host&quot;, b&quot;&quot;).decode()</span>
-<span id="L42"><a href="#L42" aria-label="Line 42">  42</a>         if (</span>
-<span id="L43"><a href="#L43" aria-label="Line 43">  43</a>             mutating</span>
-<span id="L44"><a href="#L44" aria-label="Line 44">  44</a>             and origin</span>
-<span id="L45"><a href="#L45" aria-label="Line 45">  45</a>             and origin.decode() != f&quot;{scope.get(&#x27;scheme&#x27;, &#x27;http&#x27;)}://{host}&quot;</span>
-<span id="L46"><a href="#L46" aria-label="Line 46">  46</a>         ):</span>
-<span id="L47"><a href="#L47" aria-label="Line 47">  47</a>             return await JSONResponse(</span>
-<span id="L48"><a href="#L48" aria-label="Line 48">  48</a>                 {&quot;detail&quot;: &quot;Cross-origin writes are disabled&quot;}, 403</span>
-<span id="L49"><a href="#L49" aria-label="Line 49">  49</a>             )(scope, receive, send)</span>
-<span id="L50"><a href="#L50" aria-label="Line 50">  50</a>         if mutating:</span>
-<span id="L51"><a href="#L51" aria-label="Line 51">  51</a>             chunks, size = [], 0</span>
-<span id="L52"><a href="#L52" aria-label="Line 52">  52</a>             while True:</span>
-<span id="L53"><a href="#L53" aria-label="Line 53">  53</a>                 message = await receive()</span>
-<span id="L54"><a href="#L54" aria-label="Line 54">  54</a>                 if message[&quot;type&quot;] == &quot;http.disconnect&quot;:</span>
-<span id="L55"><a href="#L55" aria-label="Line 55">  55</a>                     return</span>
-<span id="L56"><a href="#L56" aria-label="Line 56">  56</a>                 size += len(message.get(&quot;body&quot;, b&quot;&quot;))</span>
-<span id="L57"><a href="#L57" aria-label="Line 57">  57</a>                 if size &gt; MAX_UPLOAD + 65_536:</span>
-<span id="L58"><a href="#L58" aria-label="Line 58">  58</a>                     return await JSONResponse(</span>
-<span id="L59"><a href="#L59" aria-label="Line 59">  59</a>                         {&quot;detail&quot;: &quot;Request exceeds 5 MiB upload limit&quot;}, 413</span>
-<span id="L60"><a href="#L60" aria-label="Line 60">  60</a>                     )(scope, receive, send)</span>
-<span id="L61"><a href="#L61" aria-label="Line 61">  61</a>                 chunks.append(message.get(&quot;body&quot;, b&quot;&quot;))</span>
-<span id="L62"><a href="#L62" aria-label="Line 62">  62</a>                 if not message.get(&quot;more_body&quot;):</span>
-<span id="L63"><a href="#L63" aria-label="Line 63">  63</a>                     break</span>
-<span id="L64"><a href="#L64" aria-label="Line 64">  64</a>             delivered = False</span>
-<span id="L65"><a href="#L65" aria-label="Line 65">  65</a> </span>
-<span id="L66"><a href="#L66" aria-label="Line 66">  66</a>             async def replay():</span>
-<span id="L67"><a href="#L67" aria-label="Line 67">  67</a>                 nonlocal delivered</span>
-<span id="L68"><a href="#L68" aria-label="Line 68">  68</a>                 if not delivered:</span>
-<span id="L69"><a href="#L69" aria-label="Line 69">  69</a>                     delivered = True</span>
-<span id="L70"><a href="#L70" aria-label="Line 70">  70</a>                     return {</span>
-<span id="L71"><a href="#L71" aria-label="Line 71">  71</a>                         &quot;type&quot;: &quot;http.request&quot;,</span>
-<span id="L72"><a href="#L72" aria-label="Line 72">  72</a>                         &quot;body&quot;: b&quot;&quot;.join(chunks),</span>
-<span id="L73"><a href="#L73" aria-label="Line 73">  73</a>                         &quot;more_body&quot;: False,</span>
-<span id="L74"><a href="#L74" aria-label="Line 74">  74</a>                     }</span>
-<span id="L75"><a href="#L75" aria-label="Line 75">  75</a>                 return await receive()</span>
-<span id="L76"><a href="#L76" aria-label="Line 76">  76</a> </span>
-<span id="L77"><a href="#L77" aria-label="Line 77">  77</a>             await self.app(scope, replay, send)</span>
-<span id="L78"><a href="#L78" aria-label="Line 78">  78</a>         else:</span>
-<span id="L79"><a href="#L79" aria-label="Line 79">  79</a>             await self.app(scope, receive, send)</span>
-<span id="L80"><a href="#L80" aria-label="Line 80">  80</a> </span>
+<span id="L29"><a href="#L29" aria-label="Line 29">  29</a> </span>
+<span id="L30"><a href="#L30" aria-label="Line 30">  30</a> class LocalBoundary:</span>
+<span id="L31"><a href="#L31" aria-label="Line 31">  31</a>     &quot;&quot;&quot;Bound request bodies before multipart parsing; reject cross-origin writes.&quot;&quot;&quot;</span>
+<span id="L32"><a href="#L32" aria-label="Line 32">  32</a> </span>
+<span id="L33"><a href="#L33" aria-label="Line 33">  33</a>     def __init__(self, app):</span>
+<span id="L34"><a href="#L34" aria-label="Line 34">  34</a>         self.app = app</span>
+<span id="L35"><a href="#L35" aria-label="Line 35">  35</a> </span>
+<span id="L36"><a href="#L36" aria-label="Line 36">  36</a>     async def __call__(self, scope, receive, send):</span>
+<span id="L37"><a href="#L37" aria-label="Line 37">  37</a>         if scope[&quot;type&quot;] != &quot;http&quot;:</span>
+<span id="L38"><a href="#L38" aria-label="Line 38">  38</a>             return await self.app(scope, receive, send)</span>
+<span id="L39"><a href="#L39" aria-label="Line 39">  39</a>         headers = dict(scope[&quot;headers&quot;])</span>
+<span id="L40"><a href="#L40" aria-label="Line 40">  40</a>         mutating = scope[&quot;method&quot;] in (&quot;POST&quot;, &quot;PUT&quot;, &quot;PATCH&quot;, &quot;DELETE&quot;)</span>
+<span id="L41"><a href="#L41" aria-label="Line 41">  41</a>         origin = headers.get(b&quot;origin&quot;)</span>
+<span id="L42"><a href="#L42" aria-label="Line 42">  42</a>         host = headers.get(b&quot;host&quot;, b&quot;&quot;).decode()</span>
+<span id="L43"><a href="#L43" aria-label="Line 43">  43</a>         if (</span>
+<span id="L44"><a href="#L44" aria-label="Line 44">  44</a>             mutating</span>
+<span id="L45"><a href="#L45" aria-label="Line 45">  45</a>             and origin</span>
+<span id="L46"><a href="#L46" aria-label="Line 46">  46</a>             and origin.decode() != f&quot;{scope.get(&#x27;scheme&#x27;, &#x27;http&#x27;)}://{host}&quot;</span>
+<span id="L47"><a href="#L47" aria-label="Line 47">  47</a>         ):</span>
+<span id="L48"><a href="#L48" aria-label="Line 48">  48</a>             return await JSONResponse(</span>
+<span id="L49"><a href="#L49" aria-label="Line 49">  49</a>                 {&quot;detail&quot;: &quot;Cross-origin writes are disabled&quot;}, 403</span>
+<span id="L50"><a href="#L50" aria-label="Line 50">  50</a>             )(scope, receive, send)</span>
+<span id="L51"><a href="#L51" aria-label="Line 51">  51</a>         if mutating:</span>
+<span id="L52"><a href="#L52" aria-label="Line 52">  52</a>             chunks, size = [], 0</span>
+<span id="L53"><a href="#L53" aria-label="Line 53">  53</a>             while True:</span>
+<span id="L54"><a href="#L54" aria-label="Line 54">  54</a>                 message = await receive()</span>
+<span id="L55"><a href="#L55" aria-label="Line 55">  55</a>                 if message[&quot;type&quot;] == &quot;http.disconnect&quot;:</span>
+<span id="L56"><a href="#L56" aria-label="Line 56">  56</a>                     return</span>
+<span id="L57"><a href="#L57" aria-label="Line 57">  57</a>                 size += len(message.get(&quot;body&quot;, b&quot;&quot;))</span>
+<span id="L58"><a href="#L58" aria-label="Line 58">  58</a>                 if size &gt; MAX_UPLOAD + 65_536:</span>
+<span id="L59"><a href="#L59" aria-label="Line 59">  59</a>                     return await JSONResponse(</span>
+<span id="L60"><a href="#L60" aria-label="Line 60">  60</a>                         {&quot;detail&quot;: &quot;Request exceeds 5 MiB upload limit&quot;}, 413</span>
+<span id="L61"><a href="#L61" aria-label="Line 61">  61</a>                     )(scope, receive, send)</span>
+<span id="L62"><a href="#L62" aria-label="Line 62">  62</a>                 chunks.append(message.get(&quot;body&quot;, b&quot;&quot;))</span>
+<span id="L63"><a href="#L63" aria-label="Line 63">  63</a>                 if not message.get(&quot;more_body&quot;):</span>
+<span id="L64"><a href="#L64" aria-label="Line 64">  64</a>                     break</span>
+<span id="L65"><a href="#L65" aria-label="Line 65">  65</a>             delivered = False</span>
+<span id="L66"><a href="#L66" aria-label="Line 66">  66</a> </span>
+<span id="L67"><a href="#L67" aria-label="Line 67">  67</a>             async def replay():</span>
+<span id="L68"><a href="#L68" aria-label="Line 68">  68</a>                 nonlocal delivered</span>
+<span id="L69"><a href="#L69" aria-label="Line 69">  69</a>                 if not delivered:</span>
+<span id="L70"><a href="#L70" aria-label="Line 70">  70</a>                     delivered = True</span>
+<span id="L71"><a href="#L71" aria-label="Line 71">  71</a>                     return {</span>
+<span id="L72"><a href="#L72" aria-label="Line 72">  72</a>                         &quot;type&quot;: &quot;http.request&quot;,</span>
+<span id="L73"><a href="#L73" aria-label="Line 73">  73</a>                         &quot;body&quot;: b&quot;&quot;.join(chunks),</span>
+<span id="L74"><a href="#L74" aria-label="Line 74">  74</a>                         &quot;more_body&quot;: False,</span>
+<span id="L75"><a href="#L75" aria-label="Line 75">  75</a>                     }</span>
+<span id="L76"><a href="#L76" aria-label="Line 76">  76</a>                 return await receive()</span>
+<span id="L77"><a href="#L77" aria-label="Line 77">  77</a> </span>
+<span id="L78"><a href="#L78" aria-label="Line 78">  78</a>             await self.app(scope, replay, send)</span>
+<span id="L79"><a href="#L79" aria-label="Line 79">  79</a>         else:</span>
+<span id="L80"><a href="#L80" aria-label="Line 80">  80</a>             await self.app(scope, receive, send)</span>
 <span id="L81"><a href="#L81" aria-label="Line 81">  81</a> </span>
-<span id="L82"><a href="#L82" aria-label="Line 82">  82</a> class RuleSettings(BaseModel):</span>
-<span id="L83"><a href="#L83" aria-label="Line 83">  83</a>     model_config = ConfigDict(extra=&quot;forbid&quot;, strict=True)</span>
-<span id="L84"><a href="#L84" aria-label="Line 84">  84</a>     ssh_threshold: int = Field(default=5, ge=2, le=100)</span>
-<span id="L85"><a href="#L85" aria-label="Line 85">  85</a>     windows_threshold: int = Field(default=5, ge=2, le=100)</span>
-<span id="L86"><a href="#L86" aria-label="Line 86">  86</a>     sudo_threshold: int = Field(default=3, ge=2, le=100)</span>
-<span id="L87"><a href="#L87" aria-label="Line 87">  87</a>     success_threshold: int = Field(default=3, ge=2, le=100)</span>
-<span id="L88"><a href="#L88" aria-label="Line 88">  88</a>     window_seconds: int = Field(default=300, ge=10, le=3600)</span>
-<span id="L89"><a href="#L89" aria-label="Line 89">  89</a> </span>
+<span id="L82"><a href="#L82" aria-label="Line 82">  82</a> </span>
+<span id="L83"><a href="#L83" aria-label="Line 83">  83</a> class RuleSettings(BaseModel):</span>
+<span id="L84"><a href="#L84" aria-label="Line 84">  84</a>     model_config = ConfigDict(extra=&quot;forbid&quot;, strict=True)</span>
+<span id="L85"><a href="#L85" aria-label="Line 85">  85</a>     ssh_threshold: int = Field(default=5, ge=2, le=100)</span>
+<span id="L86"><a href="#L86" aria-label="Line 86">  86</a>     windows_threshold: int = Field(default=5, ge=2, le=100)</span>
+<span id="L87"><a href="#L87" aria-label="Line 87">  87</a>     sudo_threshold: int = Field(default=3, ge=2, le=100)</span>
+<span id="L88"><a href="#L88" aria-label="Line 88">  88</a>     success_threshold: int = Field(default=3, ge=2, le=100)</span>
+<span id="L89"><a href="#L89" aria-label="Line 89">  89</a>     window_seconds: int = Field(default=300, ge=10, le=3600)</span>
 <span id="L90"><a href="#L90" aria-label="Line 90">  90</a> </span>
-<span id="L91"><a href="#L91" aria-label="Line 91">  91</a> class AlertStatus(BaseModel):</span>
-<span id="L92"><a href="#L92" aria-label="Line 92">  92</a>     model_config = ConfigDict(extra=&quot;forbid&quot;)</span>
-<span id="L93"><a href="#L93" aria-label="Line 93">  93</a>     status: Literal[&quot;new&quot;, &quot;investigating&quot;, &quot;resolved&quot;]</span>
-<span id="L94"><a href="#L94" aria-label="Line 94">  94</a> </span>
+<span id="L91"><a href="#L91" aria-label="Line 91">  91</a> </span>
+<span id="L92"><a href="#L92" aria-label="Line 92">  92</a> class AlertStatus(BaseModel):</span>
+<span id="L93"><a href="#L93" aria-label="Line 93">  93</a>     model_config = ConfigDict(extra=&quot;forbid&quot;)</span>
+<span id="L94"><a href="#L94" aria-label="Line 94">  94</a>     status: Literal[&quot;new&quot;, &quot;investigating&quot;, &quot;resolved&quot;]</span>
 <span id="L95"><a href="#L95" aria-label="Line 95">  95</a> </span>
-<span id="L96"><a href="#L96" aria-label="Line 96">  96</a> class ReplayRequest(BaseModel):</span>
-<span id="L97"><a href="#L97" aria-label="Line 97">  97</a>     model_config = ConfigDict(extra=&quot;forbid&quot;, strict=True)</span>
-<span id="L98"><a href="#L98" aria-label="Line 98">  98</a>     scenario: str | None = Field(default=None, max_length=80)</span>
-<span id="L99"><a href="#L99" aria-label="Line 99">  99</a>     alert_id: str | None = Field(default=None, max_length=64)</span>
-<span id="L100"><a href="#L100" aria-label="Line 100"> 100</a>     settings: RuleSettings</span>
-<span id="L101"><a href="#L101" aria-label="Line 101"> 101</a> </span>
+<span id="L96"><a href="#L96" aria-label="Line 96">  96</a> </span>
+<span id="L97"><a href="#L97" aria-label="Line 97">  97</a> class ReplayRequest(BaseModel):</span>
+<span id="L98"><a href="#L98" aria-label="Line 98">  98</a>     model_config = ConfigDict(extra=&quot;forbid&quot;, strict=True)</span>
+<span id="L99"><a href="#L99" aria-label="Line 99">  99</a>     scenario: str | None = Field(default=None, max_length=80)</span>
+<span id="L100"><a href="#L100" aria-label="Line 100"> 100</a>     alert_id: str | None = Field(default=None, max_length=64)</span>
+<span id="L101"><a href="#L101" aria-label="Line 101"> 101</a>     settings: RuleSettings</span>
 <span id="L102"><a href="#L102" aria-label="Line 102"> 102</a> </span>
-<span id="L103"><a href="#L103" aria-label="Line 103"> 103</a> class AnalystNote(BaseModel):</span>
-<span id="L104"><a href="#L104" aria-label="Line 104"> 104</a>     model_config = ConfigDict(extra=&quot;forbid&quot;, strict=True)</span>
-<span id="L105"><a href="#L105" aria-label="Line 105"> 105</a>     assessment: Literal[&quot;undetermined&quot;, &quot;likely_benign&quot;, &quot;suspicious&quot;] = &quot;undetermined&quot;</span>
-<span id="L106"><a href="#L106" aria-label="Line 106"> 106</a>     observation: str = Field(default=&quot;&quot;, max_length=4000)</span>
-<span id="L107"><a href="#L107" aria-label="Line 107"> 107</a>     hypothesis: str = Field(default=&quot;&quot;, max_length=4000)</span>
-<span id="L108"><a href="#L108" aria-label="Line 108"> 108</a>     next_step: str = Field(default=&quot;&quot;, max_length=4000)</span>
-<span id="L109"><a href="#L109" aria-label="Line 109"> 109</a> </span>
+<span id="L103"><a href="#L103" aria-label="Line 103"> 103</a> </span>
+<span id="L104"><a href="#L104" aria-label="Line 104"> 104</a> class AnalystNote(BaseModel):</span>
+<span id="L105"><a href="#L105" aria-label="Line 105"> 105</a>     model_config = ConfigDict(extra=&quot;forbid&quot;, strict=True)</span>
+<span id="L106"><a href="#L106" aria-label="Line 106"> 106</a>     assessment: Literal[&quot;undetermined&quot;, &quot;likely_benign&quot;, &quot;suspicious&quot;] = &quot;undetermined&quot;</span>
+<span id="L107"><a href="#L107" aria-label="Line 107"> 107</a>     observation: str = Field(default=&quot;&quot;, max_length=4000)</span>
+<span id="L108"><a href="#L108" aria-label="Line 108"> 108</a>     hypothesis: str = Field(default=&quot;&quot;, max_length=4000)</span>
+<span id="L109"><a href="#L109" aria-label="Line 109"> 109</a>     next_step: str = Field(default=&quot;&quot;, max_length=4000)</span>
 <span id="L110"><a href="#L110" aria-label="Line 110"> 110</a> </span>
-<span id="L111"><a href="#L111" aria-label="Line 111"> 111</a> def create_app(db_path=None):</span>
-<span id="L112"><a href="#L112" aria-label="Line 112"> 112</a>     path = str(db_path or os.getenv(&quot;LOGSENTINEL_DB&quot;, &quot;data/logsentinel.db&quot;))</span>
-<span id="L113"><a href="#L113" aria-label="Line 113"> 113</a> </span>
-<span id="L114"><a href="#L114" aria-label="Line 114"> 114</a>     @asynccontextmanager</span>
-<span id="L115"><a href="#L115" aria-label="Line 115"> 115</a>     async def lifespan(app):</span>
-<span id="L116"><a href="#L116" aria-label="Line 116"> 116</a>         initialize(path)</span>
-<span id="L117"><a href="#L117" aria-label="Line 117"> 117</a>         yield</span>
-<span id="L118"><a href="#L118" aria-label="Line 118"> 118</a> </span>
-<span id="L119"><a href="#L119" aria-label="Line 119"> 119</a>     app = FastAPI(</span>
-<span id="L120"><a href="#L120" aria-label="Line 120"> 120</a>         title=&quot;LogSentinel&quot;,</span>
-<span id="L121"><a href="#L121" aria-label="Line 121"> 121</a>         version=&quot;1.2.0&quot;,</span>
-<span id="L122"><a href="#L122" aria-label="Line 122"> 122</a>         lifespan=lifespan,</span>
-<span id="L123"><a href="#L123" aria-label="Line 123"> 123</a>         docs_url=None,</span>
-<span id="L124"><a href="#L124" aria-label="Line 124"> 124</a>         redoc_url=None,</span>
-<span id="L125"><a href="#L125" aria-label="Line 125"> 125</a>         telemetry={</span>
-<span id="L126"><a href="#L126" aria-label="Line 126"> 126</a>             &quot;tracing&quot;: False,</span>
-<span id="L127"><a href="#L127" aria-label="Line 127"> 127</a>             &quot;metrics&quot;: False,</span>
-<span id="L128"><a href="#L128" aria-label="Line 128"> 128</a>             &quot;logs&quot;: False,</span>
-<span id="L129"><a href="#L129" aria-label="Line 129"> 129</a>             &quot;operation_spans&quot;: False,</span>
-<span id="L130"><a href="#L130" aria-label="Line 130"> 130</a>             &quot;auto_configure&quot;: False,</span>
-<span id="L131"><a href="#L131" aria-label="Line 131"> 131</a>         },</span>
-<span id="L132"><a href="#L132" aria-label="Line 132"> 132</a>     )</span>
-<span id="L133"><a href="#L133" aria-label="Line 133"> 133</a>     app.state.db_path = path</span>
-<span id="L134"><a href="#L134" aria-label="Line 134"> 134</a>     app.add_middleware(LocalBoundary)</span>
-<span id="L135"><a href="#L135" aria-label="Line 135"> 135</a>     app.add_middleware(TrustedHostMiddleware, allowed_hosts=[&quot;localhost&quot;, &quot;127.0.0.1&quot;])</span>
-<span id="L136"><a href="#L136" aria-label="Line 136"> 136</a> </span>
-<span id="L137"><a href="#L137" aria-label="Line 137"> 137</a>     @app.middleware(&quot;http&quot;)</span>
-<span id="L138"><a href="#L138" aria-label="Line 138"> 138</a>     async def security_headers(request, call_next):</span>
-<span id="L139"><a href="#L139" aria-label="Line 139"> 139</a>         response = await call_next(request)</span>
-<span id="L140"><a href="#L140" aria-label="Line 140"> 140</a>         response.headers[&quot;X-Content-Type-Options&quot;] = &quot;nosniff&quot;</span>
-<span id="L141"><a href="#L141" aria-label="Line 141"> 141</a>         response.headers[&quot;X-Frame-Options&quot;] = &quot;DENY&quot;</span>
-<span id="L142"><a href="#L142" aria-label="Line 142"> 142</a>         response.headers[&quot;Referrer-Policy&quot;] = &quot;no-referrer&quot;</span>
-<span id="L143"><a href="#L143" aria-label="Line 143"> 143</a>         response.headers[&quot;Cache-Control&quot;] = &quot;no-store&quot;</span>
-<span id="L144"><a href="#L144" aria-label="Line 144"> 144</a>         response.headers[&quot;Content-Security-Policy&quot;] = (</span>
-<span id="L145"><a href="#L145" aria-label="Line 145"> 145</a>             &quot;default-src &#x27;self&#x27;; script-src &#x27;self&#x27;; style-src &#x27;self&#x27;; img-src &#x27;self&#x27; data:; connect-src &#x27;self&#x27;; frame-ancestors &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;self&#x27;&quot;</span>
-<span id="L146"><a href="#L146" aria-label="Line 146"> 146</a>         )</span>
-<span id="L147"><a href="#L147" aria-label="Line 147"> 147</a>         return response</span>
-<span id="L148"><a href="#L148" aria-label="Line 148"> 148</a> </span>
-<span id="L149"><a href="#L149" aria-label="Line 149"> 149</a>     @app.exception_handler(sqlite3.OperationalError)</span>
-<span id="L150"><a href="#L150" aria-label="Line 150"> 150</a>     async def storage_error(request, exc):</span>
-<span id="L151"><a href="#L151" aria-label="Line 151"> 151</a>         return JSONResponse(</span>
-<span id="L152"><a href="#L152" aria-label="Line 152"> 152</a>             {</span>
-<span id="L153"><a href="#L153" aria-label="Line 153"> 153</a>                 &quot;detail&quot;: &quot;Storage unavailable or busy; retry or inspect local database permissions&quot;</span>
-<span id="L154"><a href="#L154" aria-label="Line 154"> 154</a>             },</span>
-<span id="L155"><a href="#L155" aria-label="Line 155"> 155</a>             503,</span>
-<span id="L156"><a href="#L156" aria-label="Line 156"> 156</a>         )</span>
-<span id="L157"><a href="#L157" aria-label="Line 157"> 157</a> </span>
-<span id="L158"><a href="#L158" aria-label="Line 158"> 158</a>     @app.get(&quot;/api/health&quot;)</span>
-<span id="L159"><a href="#L159" aria-label="Line 159"> 159</a>     def health():</span>
-<span id="L160"><a href="#L160" aria-label="Line 160"> 160</a>         with connection(path) as db:</span>
-<span id="L161"><a href="#L161" aria-label="Line 161"> 161</a>             db.execute(&quot;SELECT count(*) FROM events&quot;).fetchone()</span>
-<span id="L162"><a href="#L162" aria-label="Line 162"> 162</a>         return {&quot;status&quot;: &quot;ok&quot;, &quot;version&quot;: &quot;1.2.0&quot;}</span>
-<span id="L163"><a href="#L163" aria-label="Line 163"> 163</a> </span>
-<span id="L164"><a href="#L164" aria-label="Line 164"> 164</a>     @app.post(&quot;/api/import&quot;)</span>
-<span id="L165"><a href="#L165" aria-label="Line 165"> 165</a>     def import_logs(</span>
-<span id="L166"><a href="#L166" aria-label="Line 166"> 166</a>         file: UploadFile = File(...),</span>
-<span id="L167"><a href="#L167" aria-label="Line 167"> 167</a>         format: Literal[&quot;auto&quot;, &quot;linux&quot;, &quot;json&quot;, &quot;xml&quot;] = Form(&quot;auto&quot;),</span>
-<span id="L168"><a href="#L168" aria-label="Line 168"> 168</a>         year: int = Form(datetime.now(timezone.utc).year),</span>
-<span id="L169"><a href="#L169" aria-label="Line 169"> 169</a>         timezone_offset: str = Form(&quot;+00:00&quot;),</span>
-<span id="L170"><a href="#L170" aria-label="Line 170"> 170</a>     ):</span>
-<span id="L171"><a href="#L171" aria-label="Line 171"> 171</a>         content = file.file.read(MAX_UPLOAD + 1)</span>
-<span id="L172"><a href="#L172" aria-label="Line 172"> 172</a>         if len(content) &gt; MAX_UPLOAD:</span>
-<span id="L173"><a href="#L173" aria-label="Line 173"> 173</a>             raise HTTPException(413, &quot;File exceeds 5 MiB&quot;)</span>
-<span id="L174"><a href="#L174" aria-label="Line 174"> 174</a>         try:</span>
-<span id="L175"><a href="#L175" aria-label="Line 175"> 175</a>             parsed = parse(content.decode(&quot;utf-8-sig&quot;), format, year, timezone_offset)</span>
-<span id="L176"><a href="#L176" aria-label="Line 176"> 176</a>             with connection(path) as db:</span>
-<span id="L177"><a href="#L177" aria-label="Line 177"> 177</a>                 result = ingest(</span>
-<span id="L178"><a href="#L178" aria-label="Line 178"> 178</a>                     db, parsed.events, Path(file.filename or &quot;upload&quot;).name[:200]</span>
-<span id="L179"><a href="#L179" aria-label="Line 179"> 179</a>                 )</span>
-<span id="L180"><a href="#L180" aria-label="Line 180"> 180</a>         except UnicodeDecodeError:</span>
-<span id="L181"><a href="#L181" aria-label="Line 181"> 181</a>             raise HTTPException(</span>
-<span id="L182"><a href="#L182" aria-label="Line 182"> 182</a>                 400,</span>
-<span id="L183"><a href="#L183" aria-label="Line 183"> 183</a>                 &quot;Use UTF-8 Linux text, Windows XML or JSON; binary EVTX is unsupported&quot;,</span>
-<span id="L184"><a href="#L184" aria-label="Line 184"> 184</a>             )</span>
-<span id="L185"><a href="#L185" aria-label="Line 185"> 185</a>         except ValueError as exc:</span>
-<span id="L186"><a href="#L186" aria-label="Line 186"> 186</a>             raise HTTPException(400, str(exc))</span>
-<span id="L187"><a href="#L187" aria-label="Line 187"> 187</a>         return {</span>
-<span id="L188"><a href="#L188" aria-label="Line 188"> 188</a>             **result,</span>
-<span id="L189"><a href="#L189" aria-label="Line 189"> 189</a>             &quot;rejected&quot;: parsed.rejected,</span>
-<span id="L190"><a href="#L190" aria-label="Line 190"> 190</a>             &quot;ignored&quot;: parsed.ignored,</span>
-<span id="L191"><a href="#L191" aria-label="Line 191"> 191</a>             &quot;errors&quot;: parsed.errors,</span>
-<span id="L192"><a href="#L192" aria-label="Line 192"> 192</a>             &quot;time_context&quot;: {&quot;year&quot;: year, &quot;timezone_offset&quot;: timezone_offset},</span>
-<span id="L193"><a href="#L193" aria-label="Line 193"> 193</a>         }</span>
-<span id="L194"><a href="#L194" aria-label="Line 194"> 194</a> </span>
-<span id="L195"><a href="#L195" aria-label="Line 195"> 195</a>     @app.post(&quot;/api/demo&quot;)</span>
-<span id="L196"><a href="#L196" aria-label="Line 196"> 196</a>     def demo():</span>
-<span id="L197"><a href="#L197" aria-label="Line 197"> 197</a>         events, rejected, ignored = [], 0, 0</span>
-<span id="L198"><a href="#L198" aria-label="Line 198"> 198</a>         for name, fmt in [</span>
-<span id="L199"><a href="#L199" aria-label="Line 199"> 199</a>             (&quot;linux-auth.log&quot;, &quot;linux&quot;),</span>
-<span id="L200"><a href="#L200" aria-label="Line 200"> 200</a>             (&quot;windows-security.json&quot;, &quot;json&quot;),</span>
-<span id="L201"><a href="#L201" aria-label="Line 201"> 201</a>         ]:</span>
-<span id="L202"><a href="#L202" aria-label="Line 202"> 202</a>             parsed = parse((ROOT / &quot;demo&quot; / name).read_text(), fmt)</span>
-<span id="L203"><a href="#L203" aria-label="Line 203"> 203</a>             events.extend(parsed.events)</span>
-<span id="L204"><a href="#L204" aria-label="Line 204"> 204</a>             rejected += parsed.rejected</span>
-<span id="L205"><a href="#L205" aria-label="Line 205"> 205</a>             ignored += parsed.ignored</span>
-<span id="L206"><a href="#L206" aria-label="Line 206"> 206</a>         try:</span>
-<span id="L207"><a href="#L207" aria-label="Line 207"> 207</a>             with connection(path) as db:</span>
-<span id="L208"><a href="#L208" aria-label="Line 208"> 208</a>                 result = ingest(db, events, &quot;bundled synthetic demo&quot;)</span>
-<span id="L209"><a href="#L209" aria-label="Line 209"> 209</a>         except ValueError as exc:</span>
-<span id="L210"><a href="#L210" aria-label="Line 210"> 210</a>             raise HTTPException(400, str(exc))</span>
-<span id="L211"><a href="#L211" aria-label="Line 211"> 211</a>         return {**result, &quot;rejected&quot;: rejected, &quot;ignored&quot;: ignored, &quot;errors&quot;: []}</span>
-<span id="L212"><a href="#L212" aria-label="Line 212"> 212</a> </span>
-<span id="L213"><a href="#L213" aria-label="Line 213"> 213</a>     @app.get(&quot;/api/settings&quot;)</span>
-<span id="L214"><a href="#L214" aria-label="Line 214"> 214</a>     def get_settings():</span>
-<span id="L215"><a href="#L215" aria-label="Line 215"> 215</a>         with connection(path) as db:</span>
-<span id="L216"><a href="#L216" aria-label="Line 216"> 216</a>             return {</span>
-<span id="L217"><a href="#L217" aria-label="Line 217"> 217</a>                 &quot;settings&quot;: settings(db),</span>
-<span id="L218"><a href="#L218" aria-label="Line 218"> 218</a>                 &quot;rules&quot;: [</span>
-<span id="L219"><a href="#L219" aria-label="Line 219"> 219</a>                     {&quot;id&quot;: key, &quot;title&quot;: v[0], &quot;severity&quot;: v[1], &quot;mitre&quot;: v[2]}</span>
-<span id="L220"><a href="#L220" aria-label="Line 220"> 220</a>                     for key, v in RULES.items()</span>
-<span id="L221"><a href="#L221" aria-label="Line 221"> 221</a>                 ],</span>
-<span id="L222"><a href="#L222" aria-label="Line 222"> 222</a>             }</span>
-<span id="L223"><a href="#L223" aria-label="Line 223"> 223</a> </span>
-<span id="L224"><a href="#L224" aria-label="Line 224"> 224</a>     @app.put(&quot;/api/settings&quot;)</span>
-<span id="L225"><a href="#L225" aria-label="Line 225"> 225</a>     def put_settings(value: RuleSettings):</span>
-<span id="L226"><a href="#L226" aria-label="Line 226"> 226</a>         with connection(path) as db:</span>
-<span id="L227"><a href="#L227" aria-label="Line 227"> 227</a>             db.execute(&quot;BEGIN IMMEDIATE&quot;)</span>
-<span id="L228"><a href="#L228" aria-label="Line 228"> 228</a>             db.execute(</span>
-<span id="L229"><a href="#L229" aria-label="Line 229"> 229</a>                 &quot;UPDATE config SET body=? WHERE id=1&quot;, (json.dumps(value.model_dump()),)</span>
-<span id="L230"><a href="#L230" aria-label="Line 230"> 230</a>             )</span>
-<span id="L231"><a href="#L231" aria-label="Line 231"> 231</a>             count = reanalyze(db)</span>
-<span id="L232"><a href="#L232" aria-label="Line 232"> 232</a>         return {&quot;settings&quot;: value.model_dump(), &quot;alerts_total&quot;: count}</span>
-<span id="L233"><a href="#L233" aria-label="Line 233"> 233</a> </span>
-<span id="L234"><a href="#L234" aria-label="Line 234"> 234</a>     @app.get(&quot;/api/events&quot;)</span>
-<span id="L235"><a href="#L235" aria-label="Line 235"> 235</a>     def events(</span>
-<span id="L236"><a href="#L236" aria-label="Line 236"> 236</a>         q: str = Query(&quot;&quot;, max_length=200),</span>
-<span id="L237"><a href="#L237" aria-label="Line 237"> 237</a>         source: Literal[&quot;linux&quot;, &quot;windows&quot;] | None = None,</span>
-<span id="L238"><a href="#L238" aria-label="Line 238"> 238</a>         event_type: str = Query(&quot;&quot;, max_length=80),</span>
-<span id="L239"><a href="#L239" aria-label="Line 239"> 239</a>         source_ip: str = Query(&quot;&quot;, max_length=64),</span>
-<span id="L240"><a href="#L240" aria-label="Line 240"> 240</a>         user: str = Query(&quot;&quot;, max_length=200),</span>
-<span id="L241"><a href="#L241" aria-label="Line 241"> 241</a>         host: str = Query(&quot;&quot;, max_length=200),</span>
-<span id="L242"><a href="#L242" aria-label="Line 242"> 242</a>         start: str | None = None,</span>
-<span id="L243"><a href="#L243" aria-label="Line 243"> 243</a>         end: str | None = None,</span>
-<span id="L244"><a href="#L244" aria-label="Line 244"> 244</a>         limit: int = Query(50, ge=1, le=200),</span>
-<span id="L245"><a href="#L245" aria-label="Line 245"> 245</a>         offset: int = Query(0, ge=0),</span>
-<span id="L246"><a href="#L246" aria-label="Line 246"> 246</a>     ):</span>
-<span id="L247"><a href="#L247" aria-label="Line 247"> 247</a>         clauses, args = [], []</span>
-<span id="L248"><a href="#L248" aria-label="Line 248"> 248</a>         for field, value in [</span>
-<span id="L249"><a href="#L249" aria-label="Line 249"> 249</a>             (&quot;source&quot;, source),</span>
-<span id="L250"><a href="#L250" aria-label="Line 250"> 250</a>             (&quot;event_type&quot;, event_type),</span>
-<span id="L251"><a href="#L251" aria-label="Line 251"> 251</a>             (&quot;source_ip&quot;, source_ip),</span>
-<span id="L252"><a href="#L252" aria-label="Line 252"> 252</a>             (&quot;user&quot;, user),</span>
-<span id="L253"><a href="#L253" aria-label="Line 253"> 253</a>             (&quot;host&quot;, host),</span>
-<span id="L254"><a href="#L254" aria-label="Line 254"> 254</a>         ]:</span>
-<span id="L255"><a href="#L255" aria-label="Line 255"> 255</a>             if value:</span>
-<span id="L256"><a href="#L256" aria-label="Line 256"> 256</a>                 clauses.append(f&quot;{field}=?&quot;)</span>
-<span id="L257"><a href="#L257" aria-label="Line 257"> 257</a>                 args.append(value)</span>
-<span id="L258"><a href="#L258" aria-label="Line 258"> 258</a>         try:</span>
-<span id="L259"><a href="#L259" aria-label="Line 259"> 259</a>             if start:</span>
-<span id="L260"><a href="#L260" aria-label="Line 260"> 260</a>                 clauses.append(&quot;timestamp&gt;=?&quot;)</span>
-<span id="L261"><a href="#L261" aria-label="Line 261"> 261</a>                 args.append(timestamp(start))</span>
-<span id="L262"><a href="#L262" aria-label="Line 262"> 262</a>             if end:</span>
-<span id="L263"><a href="#L263" aria-label="Line 263"> 263</a>                 clauses.append(&quot;timestamp&lt;=?&quot;)</span>
-<span id="L264"><a href="#L264" aria-label="Line 264"> 264</a>                 args.append(timestamp(end))</span>
-<span id="L265"><a href="#L265" aria-label="Line 265"> 265</a>             if start and end and timestamp(start) &gt; timestamp(end):</span>
-<span id="L266"><a href="#L266" aria-label="Line 266"> 266</a>                 raise ValueError(&quot;Start must precede end&quot;)</span>
-<span id="L267"><a href="#L267" aria-label="Line 267"> 267</a>         except (ValueError, TypeError):</span>
-<span id="L268"><a href="#L268" aria-label="Line 268"> 268</a>             raise HTTPException(422, &quot;Invalid date range; use ISO 8601&quot;)</span>
-<span id="L269"><a href="#L269" aria-label="Line 269"> 269</a>         if q:</span>
-<span id="L270"><a href="#L270" aria-label="Line 270"> 270</a>             clauses.append(</span>
-<span id="L271"><a href="#L271" aria-label="Line 271"> 271</a>                 &quot;(instr(lower(raw), lower(?))&gt;0 OR instr(lower(host), lower(?))&gt;0 OR instr(lower(coalesce(user,&#x27;&#x27;)), lower(?))&gt;0)&quot;</span>
-<span id="L272"><a href="#L272" aria-label="Line 272"> 272</a>             )</span>
-<span id="L273"><a href="#L273" aria-label="Line 273"> 273</a>             args.extend([q, q, q])</span>
-<span id="L274"><a href="#L274" aria-label="Line 274"> 274</a>         where = &quot; WHERE &quot; + &quot; AND &quot;.join(clauses) if clauses else &quot;&quot;</span>
-<span id="L275"><a href="#L275" aria-label="Line 275"> 275</a>         with connection(path) as db:</span>
-<span id="L276"><a href="#L276" aria-label="Line 276"> 276</a>             total = db.execute(&quot;SELECT count(*) FROM events&quot; + where, args).fetchone()[</span>
-<span id="L277"><a href="#L277" aria-label="Line 277"> 277</a>                 0</span>
-<span id="L278"><a href="#L278" aria-label="Line 278"> 278</a>             ]</span>
-<span id="L279"><a href="#L279" aria-label="Line 279"> 279</a>             rows = db.execute(</span>
-<span id="L280"><a href="#L280" aria-label="Line 280"> 280</a>                 &quot;SELECT * FROM events&quot;</span>
-<span id="L281"><a href="#L281" aria-label="Line 281"> 281</a>                 + where</span>
-<span id="L282"><a href="#L282" aria-label="Line 282"> 282</a>                 + &quot; ORDER BY timestamp DESC,id LIMIT ? OFFSET ?&quot;,</span>
-<span id="L283"><a href="#L283" aria-label="Line 283"> 283</a>                 args + [limit, offset],</span>
-<span id="L284"><a href="#L284" aria-label="Line 284"> 284</a>             )</span>
-<span id="L285"><a href="#L285" aria-label="Line 285"> 285</a>             items = [event_dict(row) for row in rows]</span>
-<span id="L286"><a href="#L286" aria-label="Line 286"> 286</a>         return {&quot;total&quot;: total, &quot;items&quot;: items, &quot;limit&quot;: limit, &quot;offset&quot;: offset}</span>
-<span id="L287"><a href="#L287" aria-label="Line 287"> 287</a> </span>
-<span id="L288"><a href="#L288" aria-label="Line 288"> 288</a>     @app.get(&quot;/api/events/{identifier}&quot;)</span>
-<span id="L289"><a href="#L289" aria-label="Line 289"> 289</a>     def event_detail(identifier: str):</span>
-<span id="L290"><a href="#L290" aria-label="Line 290"> 290</a>         with connection(path) as db:</span>
-<span id="L291"><a href="#L291" aria-label="Line 291"> 291</a>             row = db.execute(</span>
-<span id="L292"><a href="#L292" aria-label="Line 292"> 292</a>                 &quot;SELECT * FROM events WHERE id=?&quot;, (identifier,)</span>
-<span id="L293"><a href="#L293" aria-label="Line 293"> 293</a>             ).fetchone()</span>
-<span id="L294"><a href="#L294" aria-label="Line 294"> 294</a>             if row is None:</span>
-<span id="L295"><a href="#L295" aria-label="Line 295"> 295</a>                 raise HTTPException(404, &quot;Event not found&quot;)</span>
-<span id="L296"><a href="#L296" aria-label="Line 296"> 296</a>             return event_dict(row)</span>
-<span id="L297"><a href="#L297" aria-label="Line 297"> 297</a> </span>
-<span id="L298"><a href="#L298" aria-label="Line 298"> 298</a>     @app.get(&quot;/api/alerts&quot;)</span>
-<span id="L299"><a href="#L299" aria-label="Line 299"> 299</a>     def alerts(</span>
-<span id="L300"><a href="#L300" aria-label="Line 300"> 300</a>         severity: Literal[&quot;critical&quot;, &quot;high&quot;, &quot;medium&quot;] | None = None,</span>
-<span id="L301"><a href="#L301" aria-label="Line 301"> 301</a>         status: Literal[&quot;new&quot;, &quot;investigating&quot;, &quot;resolved&quot;] | None = None,</span>
-<span id="L302"><a href="#L302" aria-label="Line 302"> 302</a>         limit: int = Query(50, ge=1, le=200),</span>
-<span id="L303"><a href="#L303" aria-label="Line 303"> 303</a>         offset: int = Query(0, ge=0),</span>
-<span id="L304"><a href="#L304" aria-label="Line 304"> 304</a>     ):</span>
-<span id="L305"><a href="#L305" aria-label="Line 305"> 305</a>         with connection(path) as db:</span>
-<span id="L306"><a href="#L306" aria-label="Line 306"> 306</a>             items = [</span>
-<span id="L307"><a href="#L307" aria-label="Line 307"> 307</a>                 {**json.loads(row[&quot;body&quot;]), &quot;status&quot;: row[&quot;status&quot;]}</span>
-<span id="L308"><a href="#L308" aria-label="Line 308"> 308</a>                 for row in db.execute(&quot;SELECT * FROM alerts&quot;)</span>
-<span id="L309"><a href="#L309" aria-label="Line 309"> 309</a>             ]</span>
-<span id="L310"><a href="#L310" aria-label="Line 310"> 310</a>         items = [</span>
-<span id="L311"><a href="#L311" aria-label="Line 311"> 311</a>             a</span>
-<span id="L312"><a href="#L312" aria-label="Line 312"> 312</a>             for a in items</span>
-<span id="L313"><a href="#L313" aria-label="Line 313"> 313</a>             if (not severity or a[&quot;severity&quot;] == severity)</span>
-<span id="L314"><a href="#L314" aria-label="Line 314"> 314</a>             and (not status or a[&quot;status&quot;] == status)</span>
-<span id="L315"><a href="#L315" aria-label="Line 315"> 315</a>         ]</span>
-<span id="L316"><a href="#L316" aria-label="Line 316"> 316</a>         items.sort(key=lambda a: (a[&quot;last_seen&quot;], a[&quot;id&quot;]), reverse=True)</span>
-<span id="L317"><a href="#L317" aria-label="Line 317"> 317</a>         return {&quot;total&quot;: len(items), &quot;items&quot;: items[offset : offset + limit]}</span>
-<span id="L318"><a href="#L318" aria-label="Line 318"> 318</a> </span>
-<span id="L319"><a href="#L319" aria-label="Line 319"> 319</a>     @app.get(&quot;/api/alerts/{identifier}&quot;)</span>
-<span id="L320"><a href="#L320" aria-label="Line 320"> 320</a>     def alert_detail(identifier: str):</span>
-<span id="L321"><a href="#L321" aria-label="Line 321"> 321</a>         with connection(path) as db:</span>
-<span id="L322"><a href="#L322" aria-label="Line 322"> 322</a>             # One read snapshot keeps legacy alert parameters consistent with</span>
-<span id="L323"><a href="#L323" aria-label="Line 323"> 323</a>             # their evidence/config even during an overlapping settings update.</span>
-<span id="L324"><a href="#L324" aria-label="Line 324"> 324</a>             db.execute(&quot;BEGIN&quot;)</span>
-<span id="L325"><a href="#L325" aria-label="Line 325"> 325</a>             row = db.execute(</span>
-<span id="L326"><a href="#L326" aria-label="Line 326"> 326</a>                 &quot;SELECT * FROM alerts WHERE id=?&quot;, (identifier,)</span>
-<span id="L327"><a href="#L327" aria-label="Line 327"> 327</a>             ).fetchone()</span>
-<span id="L328"><a href="#L328" aria-label="Line 328"> 328</a>             if row is None:</span>
-<span id="L329"><a href="#L329" aria-label="Line 329"> 329</a>                 raise HTTPException(404, &quot;Alert not found&quot;)</span>
-<span id="L330"><a href="#L330" aria-label="Line 330"> 330</a>             item = {**json.loads(row[&quot;body&quot;]), &quot;status&quot;: row[&quot;status&quot;]}</span>
-<span id="L331"><a href="#L331" aria-label="Line 331"> 331</a>             # Separate indexed queries avoid SQLite variable limits for long episodes.</span>
-<span id="L332"><a href="#L332" aria-label="Line 332"> 332</a>             item[&quot;events&quot;] = [</span>
-<span id="L333"><a href="#L333" aria-label="Line 333"> 333</a>                 event_dict(</span>
-<span id="L334"><a href="#L334" aria-label="Line 334"> 334</a>                     db.execute(&quot;SELECT * FROM events WHERE id=?&quot;, (eid,)).fetchone()</span>
-<span id="L335"><a href="#L335" aria-label="Line 335"> 335</a>                 )</span>
-<span id="L336"><a href="#L336" aria-label="Line 336"> 336</a>                 for eid in item[&quot;evidence&quot;]</span>
-<span id="L337"><a href="#L337" aria-label="Line 337"> 337</a>             ]</span>
-<span id="L338"><a href="#L338" aria-label="Line 338"> 338</a>             item[&quot;explanation&quot;] = explain_alert(item, item[&quot;events&quot;], settings(db))</span>
-<span id="L339"><a href="#L339" aria-label="Line 339"> 339</a>             item[&quot;dataset&quot;] = dataset_summary(item[&quot;events&quot;])</span>
-<span id="L340"><a href="#L340" aria-label="Line 340"> 340</a>             note = db.execute(</span>
-<span id="L341"><a href="#L341" aria-label="Line 341"> 341</a>                 &quot;SELECT body FROM notebooks WHERE alert_id=?&quot;, (identifier,)</span>
-<span id="L342"><a href="#L342" aria-label="Line 342"> 342</a>             ).fetchone()</span>
-<span id="L343"><a href="#L343" aria-label="Line 343"> 343</a>             item[&quot;notebook&quot;] = json.loads(note[&quot;body&quot;]) if note else None</span>
-<span id="L344"><a href="#L344" aria-label="Line 344"> 344</a>             return item</span>
-<span id="L345"><a href="#L345" aria-label="Line 345"> 345</a> </span>
-<span id="L346"><a href="#L346" aria-label="Line 346"> 346</a>     @app.get(&quot;/api/lab&quot;)</span>
-<span id="L347"><a href="#L347" aria-label="Line 347"> 347</a>     def lab_catalog():</span>
-<span id="L348"><a href="#L348" aria-label="Line 348"> 348</a>         return {&quot;scenarios&quot;: SCENARIOS, &quot;max_evidence_records&quot;: MAX_REPLAY_EVENTS}</span>
-<span id="L349"><a href="#L349" aria-label="Line 349"> 349</a> </span>
-<span id="L350"><a href="#L350" aria-label="Line 350"> 350</a>     @app.post(&quot;/api/lab/replay&quot;)</span>
-<span id="L351"><a href="#L351" aria-label="Line 351"> 351</a>     def lab_replay(value: ReplayRequest):</span>
-<span id="L352"><a href="#L352" aria-label="Line 352"> 352</a>         if bool(value.scenario) == bool(value.alert_id):</span>
-<span id="L353"><a href="#L353" aria-label="Line 353"> 353</a>             raise HTTPException(422, &quot;Choose exactly one scenario or alert_id&quot;)</span>
-<span id="L354"><a href="#L354" aria-label="Line 354"> 354</a>         if value.alert_id:</span>
-<span id="L355"><a href="#L355" aria-label="Line 355"> 355</a>             with connection(path) as db:</span>
-<span id="L356"><a href="#L356" aria-label="Line 356"> 356</a>                 db.execute(&quot;BEGIN&quot;)</span>
-<span id="L357"><a href="#L357" aria-label="Line 357"> 357</a>                 row = db.execute(</span>
-<span id="L358"><a href="#L358" aria-label="Line 358"> 358</a>                     &quot;SELECT body FROM alerts WHERE id=?&quot;, (value.alert_id,)</span>
-<span id="L359"><a href="#L359" aria-label="Line 359"> 359</a>                 ).fetchone()</span>
-<span id="L360"><a href="#L360" aria-label="Line 360"> 360</a>                 if row is None:</span>
-<span id="L361"><a href="#L361" aria-label="Line 361"> 361</a>                     raise HTTPException(404, &quot;Alert not found&quot;)</span>
-<span id="L362"><a href="#L362" aria-label="Line 362"> 362</a>                 alert = json.loads(row[&quot;body&quot;])</span>
-<span id="L363"><a href="#L363" aria-label="Line 363"> 363</a>                 baseline = settings(db)</span>
-<span id="L364"><a href="#L364" aria-label="Line 364"> 364</a>                 if len(alert[&quot;evidence&quot;]) &gt; MAX_REPLAY_EVENTS:</span>
-<span id="L365"><a href="#L365" aria-label="Line 365"> 365</a>                     raise HTTPException(</span>
-<span id="L366"><a href="#L366" aria-label="Line 366"> 366</a>                         422,</span>
-<span id="L367"><a href="#L367" aria-label="Line 367"> 367</a>                         f&quot;Replay supports at most {MAX_REPLAY_EVENTS} evidence records; this alert is too large&quot;,</span>
-<span id="L368"><a href="#L368" aria-label="Line 368"> 368</a>                     )</span>
-<span id="L369"><a href="#L369" aria-label="Line 369"> 369</a>                 events = [</span>
-<span id="L370"><a href="#L370" aria-label="Line 370"> 370</a>                     event_dict(</span>
-<span id="L371"><a href="#L371" aria-label="Line 371"> 371</a>                         db.execute(&quot;SELECT * FROM events WHERE id=?&quot;, (eid,)).fetchone()</span>
-<span id="L372"><a href="#L372" aria-label="Line 372"> 372</a>                     )</span>
-<span id="L373"><a href="#L373" aria-label="Line 373"> 373</a>                     for eid in alert[&quot;evidence&quot;]</span>
-<span id="L374"><a href="#L374" aria-label="Line 374"> 374</a>                 ]</span>
-<span id="L375"><a href="#L375" aria-label="Line 375"> 375</a>             scope = {</span>
-<span id="L376"><a href="#L376" aria-label="Line 376"> 376</a>                 &quot;kind&quot;: &quot;alert_evidence&quot;,</span>
-<span id="L377"><a href="#L377" aria-label="Line 377"> 377</a>                 &quot;alert_id&quot;: value.alert_id,</span>
-<span id="L378"><a href="#L378" aria-label="Line 378"> 378</a>                 &quot;title&quot;: alert[&quot;title&quot;],</span>
-<span id="L379"><a href="#L379" aria-label="Line 379"> 379</a>                 &quot;dataset&quot;: dataset_summary(events),</span>
-<span id="L380"><a href="#L380" aria-label="Line 380"> 380</a>                 &quot;limits&quot;: &quot;Only this alert&#x27;s saved evidence is replayed. Other stored events are excluded. This is not a coverage or false-positive measurement.&quot;,</span>
-<span id="L381"><a href="#L381" aria-label="Line 381"> 381</a>             }</span>
-<span id="L382"><a href="#L382" aria-label="Line 382"> 382</a>         else:</span>
-<span id="L383"><a href="#L383" aria-label="Line 383"> 383</a>             try:</span>
-<span id="L384"><a href="#L384" aria-label="Line 384"> 384</a>                 events = scenario_events(value.scenario)</span>
-<span id="L385"><a href="#L385" aria-label="Line 385"> 385</a>             except ValueError as exc:</span>
-<span id="L386"><a href="#L386" aria-label="Line 386"> 386</a>                 raise HTTPException(422, str(exc))</span>
-<span id="L387"><a href="#L387" aria-label="Line 387"> 387</a>             scope = {</span>
-<span id="L388"><a href="#L388" aria-label="Line 388"> 388</a>                 &quot;kind&quot;: &quot;synthetic_scenario&quot;,</span>
-<span id="L389"><a href="#L389" aria-label="Line 389"> 389</a>                 &quot;scenario&quot;: value.scenario,</span>
-<span id="L390"><a href="#L390" aria-label="Line 390"> 390</a>                 &quot;title&quot;: next(</span>
-<span id="L391"><a href="#L391" aria-label="Line 391"> 391</a>                     s[&quot;title&quot;] for s in SCENARIOS if s[&quot;id&quot;] == value.scenario</span>
-<span id="L392"><a href="#L392" aria-label="Line 392"> 392</a>                 ),</span>
-<span id="L393"><a href="#L393" aria-label="Line 393"> 393</a>                 &quot;limits&quot;: &quot;Synthetic records in an isolated experiment. They are never imported into your workspace.&quot;,</span>
-<span id="L394"><a href="#L394" aria-label="Line 394"> 394</a>             }</span>
-<span id="L395"><a href="#L395" aria-label="Line 395"> 395</a>             with connection(path) as db:</span>
-<span id="L396"><a href="#L396" aria-label="Line 396"> 396</a>                 baseline = settings(db)</span>
-<span id="L397"><a href="#L397" aria-label="Line 397"> 397</a>         return {</span>
-<span id="L398"><a href="#L398" aria-label="Line 398"> 398</a>             **replay(events, value.settings.model_dump()),</span>
-<span id="L399"><a href="#L399" aria-label="Line 399"> 399</a>             &quot;scope&quot;: scope,</span>
-<span id="L400"><a href="#L400" aria-label="Line 400"> 400</a>             &quot;baseline&quot;: {</span>
-<span id="L401"><a href="#L401" aria-label="Line 401"> 401</a>                 &quot;settings&quot;: baseline,</span>
-<span id="L402"><a href="#L402" aria-label="Line 402"> 402</a>                 &quot;alerts_total&quot;: len(detect(events, baseline)),</span>
-<span id="L403"><a href="#L403" aria-label="Line 403"> 403</a>             },</span>
-<span id="L404"><a href="#L404" aria-label="Line 404"> 404</a>         }</span>
-<span id="L405"><a href="#L405" aria-label="Line 405"> 405</a> </span>
-<span id="L406"><a href="#L406" aria-label="Line 406"> 406</a>     @app.put(&quot;/api/alerts/{identifier}/notebook&quot;)</span>
-<span id="L407"><a href="#L407" aria-label="Line 407"> 407</a>     def save_notebook(identifier: str, value: AnalystNote):</span>
-<span id="L408"><a href="#L408" aria-label="Line 408"> 408</a>         with connection(path) as db:</span>
-<span id="L409"><a href="#L409" aria-label="Line 409"> 409</a>             db.execute(&quot;BEGIN IMMEDIATE&quot;)</span>
-<span id="L410"><a href="#L410" aria-label="Line 410"> 410</a>             row = db.execute(</span>
-<span id="L411"><a href="#L411" aria-label="Line 411"> 411</a>                 &quot;SELECT * FROM alerts WHERE id=?&quot;, (identifier,)</span>
-<span id="L412"><a href="#L412" aria-label="Line 412"> 412</a>             ).fetchone()</span>
-<span id="L413"><a href="#L413" aria-label="Line 413"> 413</a>             if row is None:</span>
-<span id="L414"><a href="#L414" aria-label="Line 414"> 414</a>                 raise HTTPException(404, &quot;Alert not found&quot;)</span>
-<span id="L415"><a href="#L415" aria-label="Line 415"> 415</a>             alert = {**json.loads(row[&quot;body&quot;]), &quot;status&quot;: row[&quot;status&quot;]}</span>
-<span id="L416"><a href="#L416" aria-label="Line 416"> 416</a>             evidence_ids = alert[&quot;evidence&quot;]</span>
-<span id="L417"><a href="#L417" aria-label="Line 417"> 417</a>             snapshot_ids = (</span>
-<span id="L418"><a href="#L418" aria-label="Line 418"> 418</a>                 evidence_ids</span>
-<span id="L419"><a href="#L419" aria-label="Line 419"> 419</a>                 if len(evidence_ids) &lt;= MAX_NOTE_EVIDENCE</span>
-<span id="L420"><a href="#L420" aria-label="Line 420"> 420</a>                 else evidence_ids[: MAX_NOTE_EVIDENCE - 1] + evidence_ids[-1:]</span>
-<span id="L421"><a href="#L421" aria-label="Line 421"> 421</a>             )</span>
-<span id="L422"><a href="#L422" aria-label="Line 422"> 422</a>             events = [</span>
-<span id="L423"><a href="#L423" aria-label="Line 423"> 423</a>                 event_dict(</span>
-<span id="L424"><a href="#L424" aria-label="Line 424"> 424</a>                     db.execute(&quot;SELECT * FROM events WHERE id=?&quot;, (eid,)).fetchone()</span>
-<span id="L425"><a href="#L425" aria-label="Line 425"> 425</a>                 )</span>
-<span id="L426"><a href="#L426" aria-label="Line 426"> 426</a>                 for eid in snapshot_ids</span>
-<span id="L427"><a href="#L427" aria-label="Line 427"> 427</a>             ]</span>
-<span id="L428"><a href="#L428" aria-label="Line 428"> 428</a>             item = {</span>
-<span id="L429"><a href="#L429" aria-label="Line 429"> 429</a>                 &quot;alert_id&quot;: identifier,</span>
-<span id="L430"><a href="#L430" aria-label="Line 430"> 430</a>                 &quot;saved_at&quot;: datetime.now(timezone.utc).isoformat(),</span>
-<span id="L431"><a href="#L431" aria-label="Line 431"> 431</a>                 &quot;note&quot;: value.model_dump(),</span>
-<span id="L432"><a href="#L432" aria-label="Line 432"> 432</a>                 &quot;alert&quot;: alert,</span>
-<span id="L433"><a href="#L433" aria-label="Line 433"> 433</a>                 &quot;events&quot;: events,</span>
-<span id="L434"><a href="#L434" aria-label="Line 434"> 434</a>                 &quot;snapshot_policy&quot;: &quot;all&quot;</span>
-<span id="L435"><a href="#L435" aria-label="Line 435"> 435</a>                 if len(evidence_ids) &lt;= MAX_NOTE_EVIDENCE</span>
-<span id="L436"><a href="#L436" aria-label="Line 436"> 436</a>                 else &quot;first_and_final&quot;,</span>
-<span id="L437"><a href="#L437" aria-label="Line 437"> 437</a>                 &quot;evidence_omitted&quot;: max(0, len(alert[&quot;evidence&quot;]) - len(events)),</span>
-<span id="L438"><a href="#L438" aria-label="Line 438"> 438</a>                 &quot;scope&quot;: &quot;Manual analyst notes and a bounded evidence snapshot. Not a verified verdict or an audit history.&quot;,</span>
-<span id="L439"><a href="#L439" aria-label="Line 439"> 439</a>             }</span>
-<span id="L440"><a href="#L440" aria-label="Line 440"> 440</a>             db.execute(</span>
-<span id="L441"><a href="#L441" aria-label="Line 441"> 441</a>                 &quot;INSERT INTO notebooks VALUES (?,?) ON CONFLICT(alert_id) DO UPDATE SET body=excluded.body&quot;,</span>
-<span id="L442"><a href="#L442" aria-label="Line 442"> 442</a>                 (identifier, json.dumps(item)),</span>
-<span id="L443"><a href="#L443" aria-label="Line 443"> 443</a>             )</span>
-<span id="L444"><a href="#L444" aria-label="Line 444"> 444</a>         return item</span>
-<span id="L445"><a href="#L445" aria-label="Line 445"> 445</a> </span>
-<span id="L446"><a href="#L446" aria-label="Line 446"> 446</a>     @app.get(&quot;/api/notebooks&quot;)</span>
-<span id="L447"><a href="#L447" aria-label="Line 447"> 447</a>     def notebooks():</span>
-<span id="L448"><a href="#L448" aria-label="Line 448"> 448</a>         with connection(path) as db:</span>
-<span id="L449"><a href="#L449" aria-label="Line 449"> 449</a>             items = []</span>
-<span id="L450"><a href="#L450" aria-label="Line 450"> 450</a>             for row in db.execute(</span>
-<span id="L451"><a href="#L451" aria-label="Line 451"> 451</a>                 &quot;SELECT notebooks.body, alerts.id AS active_id FROM notebooks LEFT JOIN alerts ON alerts.id=notebooks.alert_id&quot;</span>
-<span id="L452"><a href="#L452" aria-label="Line 452"> 452</a>             ):</span>
-<span id="L453"><a href="#L453" aria-label="Line 453"> 453</a>                 note = json.loads(row[&quot;body&quot;])</span>
-<span id="L454"><a href="#L454" aria-label="Line 454"> 454</a>                 items.append(</span>
-<span id="L455"><a href="#L455" aria-label="Line 455"> 455</a>                     {</span>
-<span id="L456"><a href="#L456" aria-label="Line 456"> 456</a>                         &quot;alert_id&quot;: note[&quot;alert_id&quot;],</span>
-<span id="L457"><a href="#L457" aria-label="Line 457"> 457</a>                         &quot;title&quot;: note[&quot;alert&quot;][&quot;title&quot;],</span>
-<span id="L458"><a href="#L458" aria-label="Line 458"> 458</a>                         &quot;saved_at&quot;: note[&quot;saved_at&quot;],</span>
-<span id="L459"><a href="#L459" aria-label="Line 459"> 459</a>                         &quot;assessment&quot;: note[&quot;note&quot;][&quot;assessment&quot;],</span>
-<span id="L460"><a href="#L460" aria-label="Line 460"> 460</a>                         &quot;active&quot;: row[&quot;active_id&quot;] is not None,</span>
-<span id="L461"><a href="#L461" aria-label="Line 461"> 461</a>                     }</span>
-<span id="L462"><a href="#L462" aria-label="Line 462"> 462</a>                 )</span>
-<span id="L463"><a href="#L463" aria-label="Line 463"> 463</a>         return {&quot;items&quot;: sorted(items, key=lambda n: n[&quot;saved_at&quot;], reverse=True)}</span>
-<span id="L464"><a href="#L464" aria-label="Line 464"> 464</a> </span>
-<span id="L465"><a href="#L465" aria-label="Line 465"> 465</a>     @app.get(&quot;/api/notebooks/{identifier}&quot;)</span>
-<span id="L466"><a href="#L466" aria-label="Line 466"> 466</a>     def notebook_detail(identifier: str):</span>
-<span id="L467"><a href="#L467" aria-label="Line 467"> 467</a>         with connection(path) as db:</span>
-<span id="L468"><a href="#L468" aria-label="Line 468"> 468</a>             row = db.execute(</span>
-<span id="L469"><a href="#L469" aria-label="Line 469"> 469</a>                 &quot;SELECT body FROM notebooks WHERE alert_id=?&quot;, (identifier,)</span>
-<span id="L470"><a href="#L470" aria-label="Line 470"> 470</a>             ).fetchone()</span>
-<span id="L471"><a href="#L471" aria-label="Line 471"> 471</a>             if row is None:</span>
-<span id="L472"><a href="#L472" aria-label="Line 472"> 472</a>                 raise HTTPException(404, &quot;Notebook not found&quot;)</span>
-<span id="L473"><a href="#L473" aria-label="Line 473"> 473</a>             return json.loads(row[&quot;body&quot;])</span>
-<span id="L474"><a href="#L474" aria-label="Line 474"> 474</a> </span>
-<span id="L475"><a href="#L475" aria-label="Line 475"> 475</a>     @app.patch(&quot;/api/alerts/{identifier}&quot;)</span>
-<span id="L476"><a href="#L476" aria-label="Line 476"> 476</a>     def update_alert(identifier: str, value: AlertStatus):</span>
-<span id="L477"><a href="#L477" aria-label="Line 477"> 477</a>         with connection(path) as db:</span>
-<span id="L478"><a href="#L478" aria-label="Line 478"> 478</a>             changed = db.execute(</span>
-<span id="L479"><a href="#L479" aria-label="Line 479"> 479</a>                 &quot;UPDATE alerts SET status=? WHERE id=?&quot;, (value.status, identifier)</span>
-<span id="L480"><a href="#L480" aria-label="Line 480"> 480</a>             ).rowcount</span>
-<span id="L481"><a href="#L481" aria-label="Line 481"> 481</a>             if not changed:</span>
-<span id="L482"><a href="#L482" aria-label="Line 482"> 482</a>                 raise HTTPException(404, &quot;Alert not found&quot;)</span>
-<span id="L483"><a href="#L483" aria-label="Line 483"> 483</a>         return {&quot;status&quot;: value.status}</span>
-<span id="L484"><a href="#L484" aria-label="Line 484"> 484</a> </span>
-<span id="L485"><a href="#L485" aria-label="Line 485"> 485</a>     @app.get(&quot;/api/stats&quot;)</span>
-<span id="L486"><a href="#L486" aria-label="Line 486"> 486</a>     def stats():</span>
-<span id="L487"><a href="#L487" aria-label="Line 487"> 487</a>         with connection(path) as db:</span>
-<span id="L488"><a href="#L488" aria-label="Line 488"> 488</a>             db.execute(&quot;BEGIN&quot;)</span>
-<span id="L489"><a href="#L489" aria-label="Line 489"> 489</a>             count = db.execute(&quot;SELECT count(*) FROM events&quot;).fetchone()[0]</span>
-<span id="L490"><a href="#L490" aria-label="Line 490"> 490</a>             hosts = db.execute(&quot;SELECT count(DISTINCT host) FROM events&quot;).fetchone()[0]</span>
-<span id="L491"><a href="#L491" aria-label="Line 491"> 491</a>             latest = db.execute(&quot;SELECT max(timestamp) FROM events&quot;).fetchone()[0]</span>
-<span id="L492"><a href="#L492" aria-label="Line 492"> 492</a>             sources = dict(</span>
-<span id="L493"><a href="#L493" aria-label="Line 493"> 493</a>                 db.execute(&quot;SELECT source,count(*) FROM events GROUP BY source&quot;)</span>
-<span id="L494"><a href="#L494" aria-label="Line 494"> 494</a>             )</span>
-<span id="L495"><a href="#L495" aria-label="Line 495"> 495</a>             event_timeline = dict(</span>
-<span id="L496"><a href="#L496" aria-label="Line 496"> 496</a>                 db.execute(</span>
-<span id="L497"><a href="#L497" aria-label="Line 497"> 497</a>                     &quot;SELECT substr(timestamp,1,13),count(*) FROM events GROUP BY substr(timestamp,1,13) ORDER BY 1&quot;</span>
-<span id="L498"><a href="#L498" aria-label="Line 498"> 498</a>                 )</span>
-<span id="L499"><a href="#L499" aria-label="Line 499"> 499</a>             )</span>
-<span id="L500"><a href="#L500" aria-label="Line 500"> 500</a>             alerts = [</span>
-<span id="L501"><a href="#L501" aria-label="Line 501"> 501</a>                 {**json.loads(r[&quot;body&quot;]), &quot;status&quot;: r[&quot;status&quot;]}</span>
-<span id="L502"><a href="#L502" aria-label="Line 502"> 502</a>                 for r in db.execute(&quot;SELECT * FROM alerts&quot;)</span>
-<span id="L503"><a href="#L503" aria-label="Line 503"> 503</a>             ]</span>
-<span id="L504"><a href="#L504" aria-label="Line 504"> 504</a>             gaps = sum(</span>
-<span id="L505"><a href="#L505" aria-label="Line 505"> 505</a>                 correlation_key(event_dict(r)) is None</span>
-<span id="L506"><a href="#L506" aria-label="Line 506"> 506</a>                 for r in db.execute(&quot;SELECT * FROM events&quot;)</span>
-<span id="L507"><a href="#L507" aria-label="Line 507"> 507</a>             )</span>
-<span id="L508"><a href="#L508" aria-label="Line 508"> 508</a>             dataset = dataset_summary(</span>
-<span id="L509"><a href="#L509" aria-label="Line 509"> 509</a>                 [dict(r) for r in db.execute(&quot;SELECT id FROM events&quot;)]</span>
-<span id="L510"><a href="#L510" aria-label="Line 510"> 510</a>             )</span>
-<span id="L511"><a href="#L511" aria-label="Line 511"> 511</a>         severity = {</span>
-<span id="L512"><a href="#L512" aria-label="Line 512"> 512</a>             key: sum(a[&quot;severity&quot;] == key for a in alerts)</span>
-<span id="L513"><a href="#L513" aria-label="Line 513"> 513</a>             for key in (&quot;critical&quot;, &quot;high&quot;, &quot;medium&quot;)</span>
-<span id="L514"><a href="#L514" aria-label="Line 514"> 514</a>         }</span>
-<span id="L515"><a href="#L515" aria-label="Line 515"> 515</a>         alert_timeline = {}</span>
-<span id="L516"><a href="#L516" aria-label="Line 516"> 516</a>         for a in alerts:</span>
-<span id="L517"><a href="#L517" aria-label="Line 517"> 517</a>             hour = a[&quot;last_seen&quot;][:13]</span>
-<span id="L518"><a href="#L518" aria-label="Line 518"> 518</a>             alert_timeline[hour] = alert_timeline.get(hour, 0) + 1</span>
-<span id="L519"><a href="#L519" aria-label="Line 519"> 519</a>         return {</span>
-<span id="L520"><a href="#L520" aria-label="Line 520"> 520</a>             &quot;events&quot;: count,</span>
-<span id="L521"><a href="#L521" aria-label="Line 521"> 521</a>             &quot;dataset&quot;: dataset,</span>
-<span id="L522"><a href="#L522" aria-label="Line 522"> 522</a>             &quot;alerts&quot;: len(alerts),</span>
-<span id="L523"><a href="#L523" aria-label="Line 523"> 523</a>             &quot;hosts&quot;: hosts,</span>
-<span id="L524"><a href="#L524" aria-label="Line 524"> 524</a>             &quot;latest_event&quot;: latest,</span>
-<span id="L525"><a href="#L525" aria-label="Line 525"> 525</a>             &quot;sources&quot;: sources,</span>
-<span id="L526"><a href="#L526" aria-label="Line 526"> 526</a>             &quot;severity&quot;: severity,</span>
-<span id="L527"><a href="#L527" aria-label="Line 527"> 527</a>             &quot;uncorrelated_events&quot;: gaps,</span>
-<span id="L528"><a href="#L528" aria-label="Line 528"> 528</a>             &quot;open_alerts&quot;: sum(a[&quot;status&quot;] != &quot;resolved&quot; for a in alerts),</span>
-<span id="L529"><a href="#L529" aria-label="Line 529"> 529</a>             &quot;timeline&quot;: [</span>
-<span id="L530"><a href="#L530" aria-label="Line 530"> 530</a>                 {</span>
-<span id="L531"><a href="#L531" aria-label="Line 531"> 531</a>                     &quot;hour&quot;: h + &quot;:00:00Z&quot;,</span>
-<span id="L532"><a href="#L532" aria-label="Line 532"> 532</a>                     &quot;events&quot;: event_timeline.get(h, 0),</span>
-<span id="L533"><a href="#L533" aria-label="Line 533"> 533</a>                     &quot;alerts&quot;: alert_timeline.get(h, 0),</span>
-<span id="L534"><a href="#L534" aria-label="Line 534"> 534</a>                 }</span>
-<span id="L535"><a href="#L535" aria-label="Line 535"> 535</a>                 for h in sorted(set(event_timeline) | set(alert_timeline))</span>
-<span id="L536"><a href="#L536" aria-label="Line 536"> 536</a>             ],</span>
-<span id="L537"><a href="#L537" aria-label="Line 537"> 537</a>             &quot;recent_alerts&quot;: sorted(alerts, key=lambda a: a[&quot;last_seen&quot;], reverse=True)[</span>
-<span id="L538"><a href="#L538" aria-label="Line 538"> 538</a>                 :5</span>
-<span id="L539"><a href="#L539" aria-label="Line 539"> 539</a>             ],</span>
-<span id="L540"><a href="#L540" aria-label="Line 540"> 540</a>         }</span>
-<span id="L541"><a href="#L541" aria-label="Line 541"> 541</a> </span>
-<span id="L542"><a href="#L542" aria-label="Line 542"> 542</a>     app.mount(&quot;/static&quot;, StaticFiles(directory=ROOT / &quot;static&quot;), name=&quot;static&quot;)</span>
-<span id="L543"><a href="#L543" aria-label="Line 543"> 543</a> </span>
-<span id="L544"><a href="#L544" aria-label="Line 544"> 544</a>     @app.get(&quot;/&quot;, include_in_schema=False)</span>
-<span id="L545"><a href="#L545" aria-label="Line 545"> 545</a>     def index():</span>
-<span id="L546"><a href="#L546" aria-label="Line 546"> 546</a>         return FileResponse(ROOT / &quot;static&quot; / &quot;index.html&quot;)</span>
-<span id="L547"><a href="#L547" aria-label="Line 547"> 547</a> </span>
-<span id="L548"><a href="#L548" aria-label="Line 548"> 548</a>     @app.get(&quot;/docs&quot;, include_in_schema=False)</span>
-<span id="L549"><a href="#L549" aria-label="Line 549"> 549</a>     def api_docs():</span>
-<span id="L550"><a href="#L550" aria-label="Line 550"> 550</a>         return FileResponse(ROOT / &quot;static&quot; / &quot;api.html&quot;)</span>
-<span id="L551"><a href="#L551" aria-label="Line 551"> 551</a> </span>
-<span id="L552"><a href="#L552" aria-label="Line 552"> 552</a>     return app</span>
-<span id="L553"><a href="#L553" aria-label="Line 553"> 553</a> </span>
+<span id="L111"><a href="#L111" aria-label="Line 111"> 111</a> </span>
+<span id="L112"><a href="#L112" aria-label="Line 112"> 112</a> def create_app(db_path=None):</span>
+<span id="L113"><a href="#L113" aria-label="Line 113"> 113</a>     path = str(db_path or os.getenv(&quot;LOGSENTINEL_DB&quot;, &quot;data/logsentinel.db&quot;))</span>
+<span id="L114"><a href="#L114" aria-label="Line 114"> 114</a> </span>
+<span id="L115"><a href="#L115" aria-label="Line 115"> 115</a>     @asynccontextmanager</span>
+<span id="L116"><a href="#L116" aria-label="Line 116"> 116</a>     async def lifespan(app):</span>
+<span id="L117"><a href="#L117" aria-label="Line 117"> 117</a>         initialize(path)</span>
+<span id="L118"><a href="#L118" aria-label="Line 118"> 118</a>         yield</span>
+<span id="L119"><a href="#L119" aria-label="Line 119"> 119</a> </span>
+<span id="L120"><a href="#L120" aria-label="Line 120"> 120</a>     app = FastAPI(</span>
+<span id="L121"><a href="#L121" aria-label="Line 121"> 121</a>         title=&quot;LogEssential&quot;,</span>
+<span id="L122"><a href="#L122" aria-label="Line 122"> 122</a>         version=__version__,</span>
+<span id="L123"><a href="#L123" aria-label="Line 123"> 123</a>         lifespan=lifespan,</span>
+<span id="L124"><a href="#L124" aria-label="Line 124"> 124</a>         docs_url=None,</span>
+<span id="L125"><a href="#L125" aria-label="Line 125"> 125</a>         redoc_url=None,</span>
+<span id="L126"><a href="#L126" aria-label="Line 126"> 126</a>         telemetry={</span>
+<span id="L127"><a href="#L127" aria-label="Line 127"> 127</a>             &quot;tracing&quot;: False,</span>
+<span id="L128"><a href="#L128" aria-label="Line 128"> 128</a>             &quot;metrics&quot;: False,</span>
+<span id="L129"><a href="#L129" aria-label="Line 129"> 129</a>             &quot;logs&quot;: False,</span>
+<span id="L130"><a href="#L130" aria-label="Line 130"> 130</a>             &quot;operation_spans&quot;: False,</span>
+<span id="L131"><a href="#L131" aria-label="Line 131"> 131</a>             &quot;auto_configure&quot;: False,</span>
+<span id="L132"><a href="#L132" aria-label="Line 132"> 132</a>         },</span>
+<span id="L133"><a href="#L133" aria-label="Line 133"> 133</a>     )</span>
+<span id="L134"><a href="#L134" aria-label="Line 134"> 134</a>     app.state.db_path = path</span>
+<span id="L135"><a href="#L135" aria-label="Line 135"> 135</a>     app.add_middleware(LocalBoundary)</span>
+<span id="L136"><a href="#L136" aria-label="Line 136"> 136</a>     app.add_middleware(TrustedHostMiddleware, allowed_hosts=[&quot;localhost&quot;, &quot;127.0.0.1&quot;])</span>
+<span id="L137"><a href="#L137" aria-label="Line 137"> 137</a> </span>
+<span id="L138"><a href="#L138" aria-label="Line 138"> 138</a>     @app.middleware(&quot;http&quot;)</span>
+<span id="L139"><a href="#L139" aria-label="Line 139"> 139</a>     async def security_headers(request, call_next):</span>
+<span id="L140"><a href="#L140" aria-label="Line 140"> 140</a>         response = await call_next(request)</span>
+<span id="L141"><a href="#L141" aria-label="Line 141"> 141</a>         response.headers[&quot;X-Content-Type-Options&quot;] = &quot;nosniff&quot;</span>
+<span id="L142"><a href="#L142" aria-label="Line 142"> 142</a>         response.headers[&quot;X-Frame-Options&quot;] = &quot;DENY&quot;</span>
+<span id="L143"><a href="#L143" aria-label="Line 143"> 143</a>         response.headers[&quot;Referrer-Policy&quot;] = &quot;no-referrer&quot;</span>
+<span id="L144"><a href="#L144" aria-label="Line 144"> 144</a>         response.headers[&quot;Cache-Control&quot;] = &quot;no-store&quot;</span>
+<span id="L145"><a href="#L145" aria-label="Line 145"> 145</a>         response.headers[&quot;Content-Security-Policy&quot;] = (</span>
+<span id="L146"><a href="#L146" aria-label="Line 146"> 146</a>             &quot;default-src &#x27;self&#x27;; script-src &#x27;self&#x27;; style-src &#x27;self&#x27;; img-src &#x27;self&#x27; data:; connect-src &#x27;self&#x27;; frame-ancestors &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;self&#x27;&quot;</span>
+<span id="L147"><a href="#L147" aria-label="Line 147"> 147</a>         )</span>
+<span id="L148"><a href="#L148" aria-label="Line 148"> 148</a>         return response</span>
+<span id="L149"><a href="#L149" aria-label="Line 149"> 149</a> </span>
+<span id="L150"><a href="#L150" aria-label="Line 150"> 150</a>     @app.exception_handler(sqlite3.OperationalError)</span>
+<span id="L151"><a href="#L151" aria-label="Line 151"> 151</a>     async def storage_error(request, exc):</span>
+<span id="L152"><a href="#L152" aria-label="Line 152"> 152</a>         return JSONResponse(</span>
+<span id="L153"><a href="#L153" aria-label="Line 153"> 153</a>             {</span>
+<span id="L154"><a href="#L154" aria-label="Line 154"> 154</a>                 &quot;detail&quot;: &quot;Storage unavailable or busy; retry or inspect local database permissions&quot;</span>
+<span id="L155"><a href="#L155" aria-label="Line 155"> 155</a>             },</span>
+<span id="L156"><a href="#L156" aria-label="Line 156"> 156</a>             503,</span>
+<span id="L157"><a href="#L157" aria-label="Line 157"> 157</a>         )</span>
+<span id="L158"><a href="#L158" aria-label="Line 158"> 158</a> </span>
+<span id="L159"><a href="#L159" aria-label="Line 159"> 159</a>     @app.get(&quot;/api/health&quot;)</span>
+<span id="L160"><a href="#L160" aria-label="Line 160"> 160</a>     def health():</span>
+<span id="L161"><a href="#L161" aria-label="Line 161"> 161</a>         with connection(path) as db:</span>
+<span id="L162"><a href="#L162" aria-label="Line 162"> 162</a>             db.execute(&quot;SELECT count(*) FROM events&quot;).fetchone()</span>
+<span id="L163"><a href="#L163" aria-label="Line 163"> 163</a>         return {&quot;status&quot;: &quot;ok&quot;, &quot;version&quot;: __version__}</span>
+<span id="L164"><a href="#L164" aria-label="Line 164"> 164</a> </span>
+<span id="L165"><a href="#L165" aria-label="Line 165"> 165</a>     @app.post(&quot;/api/import&quot;)</span>
+<span id="L166"><a href="#L166" aria-label="Line 166"> 166</a>     def import_logs(</span>
+<span id="L167"><a href="#L167" aria-label="Line 167"> 167</a>         file: UploadFile = File(...),</span>
+<span id="L168"><a href="#L168" aria-label="Line 168"> 168</a>         format: Literal[&quot;auto&quot;, &quot;linux&quot;, &quot;json&quot;, &quot;xml&quot;] = Form(&quot;auto&quot;),</span>
+<span id="L169"><a href="#L169" aria-label="Line 169"> 169</a>         year: int = Form(datetime.now(timezone.utc).year),</span>
+<span id="L170"><a href="#L170" aria-label="Line 170"> 170</a>         timezone_offset: str = Form(&quot;+00:00&quot;),</span>
+<span id="L171"><a href="#L171" aria-label="Line 171"> 171</a>     ):</span>
+<span id="L172"><a href="#L172" aria-label="Line 172"> 172</a>         content = file.file.read(MAX_UPLOAD + 1)</span>
+<span id="L173"><a href="#L173" aria-label="Line 173"> 173</a>         if len(content) &gt; MAX_UPLOAD:</span>
+<span id="L174"><a href="#L174" aria-label="Line 174"> 174</a>             raise HTTPException(413, &quot;File exceeds 5 MiB&quot;)</span>
+<span id="L175"><a href="#L175" aria-label="Line 175"> 175</a>         try:</span>
+<span id="L176"><a href="#L176" aria-label="Line 176"> 176</a>             parsed = parse(content.decode(&quot;utf-8-sig&quot;), format, year, timezone_offset)</span>
+<span id="L177"><a href="#L177" aria-label="Line 177"> 177</a>             with connection(path) as db:</span>
+<span id="L178"><a href="#L178" aria-label="Line 178"> 178</a>                 result = ingest(</span>
+<span id="L179"><a href="#L179" aria-label="Line 179"> 179</a>                     db, parsed.events, Path(file.filename or &quot;upload&quot;).name[:200]</span>
+<span id="L180"><a href="#L180" aria-label="Line 180"> 180</a>                 )</span>
+<span id="L181"><a href="#L181" aria-label="Line 181"> 181</a>         except UnicodeDecodeError:</span>
+<span id="L182"><a href="#L182" aria-label="Line 182"> 182</a>             raise HTTPException(</span>
+<span id="L183"><a href="#L183" aria-label="Line 183"> 183</a>                 400,</span>
+<span id="L184"><a href="#L184" aria-label="Line 184"> 184</a>                 &quot;Use UTF-8 Linux text, Windows XML or JSON; binary EVTX is unsupported&quot;,</span>
+<span id="L185"><a href="#L185" aria-label="Line 185"> 185</a>             )</span>
+<span id="L186"><a href="#L186" aria-label="Line 186"> 186</a>         except ValueError as exc:</span>
+<span id="L187"><a href="#L187" aria-label="Line 187"> 187</a>             raise HTTPException(400, str(exc))</span>
+<span id="L188"><a href="#L188" aria-label="Line 188"> 188</a>         return {</span>
+<span id="L189"><a href="#L189" aria-label="Line 189"> 189</a>             **result,</span>
+<span id="L190"><a href="#L190" aria-label="Line 190"> 190</a>             &quot;rejected&quot;: parsed.rejected,</span>
+<span id="L191"><a href="#L191" aria-label="Line 191"> 191</a>             &quot;ignored&quot;: parsed.ignored,</span>
+<span id="L192"><a href="#L192" aria-label="Line 192"> 192</a>             &quot;errors&quot;: parsed.errors,</span>
+<span id="L193"><a href="#L193" aria-label="Line 193"> 193</a>             &quot;time_context&quot;: {&quot;year&quot;: year, &quot;timezone_offset&quot;: timezone_offset},</span>
+<span id="L194"><a href="#L194" aria-label="Line 194"> 194</a>         }</span>
+<span id="L195"><a href="#L195" aria-label="Line 195"> 195</a> </span>
+<span id="L196"><a href="#L196" aria-label="Line 196"> 196</a>     @app.post(&quot;/api/demo&quot;)</span>
+<span id="L197"><a href="#L197" aria-label="Line 197"> 197</a>     def demo():</span>
+<span id="L198"><a href="#L198" aria-label="Line 198"> 198</a>         events, rejected, ignored = [], 0, 0</span>
+<span id="L199"><a href="#L199" aria-label="Line 199"> 199</a>         for name, fmt in [</span>
+<span id="L200"><a href="#L200" aria-label="Line 200"> 200</a>             (&quot;linux-auth.log&quot;, &quot;linux&quot;),</span>
+<span id="L201"><a href="#L201" aria-label="Line 201"> 201</a>             (&quot;windows-security.json&quot;, &quot;json&quot;),</span>
+<span id="L202"><a href="#L202" aria-label="Line 202"> 202</a>         ]:</span>
+<span id="L203"><a href="#L203" aria-label="Line 203"> 203</a>             parsed = parse((ROOT / &quot;demo&quot; / name).read_text(), fmt)</span>
+<span id="L204"><a href="#L204" aria-label="Line 204"> 204</a>             events.extend(parsed.events)</span>
+<span id="L205"><a href="#L205" aria-label="Line 205"> 205</a>             rejected += parsed.rejected</span>
+<span id="L206"><a href="#L206" aria-label="Line 206"> 206</a>             ignored += parsed.ignored</span>
+<span id="L207"><a href="#L207" aria-label="Line 207"> 207</a>         try:</span>
+<span id="L208"><a href="#L208" aria-label="Line 208"> 208</a>             with connection(path) as db:</span>
+<span id="L209"><a href="#L209" aria-label="Line 209"> 209</a>                 result = ingest(db, events, &quot;bundled synthetic demo&quot;)</span>
+<span id="L210"><a href="#L210" aria-label="Line 210"> 210</a>         except ValueError as exc:</span>
+<span id="L211"><a href="#L211" aria-label="Line 211"> 211</a>             raise HTTPException(400, str(exc))</span>
+<span id="L212"><a href="#L212" aria-label="Line 212"> 212</a>         return {**result, &quot;rejected&quot;: rejected, &quot;ignored&quot;: ignored, &quot;errors&quot;: []}</span>
+<span id="L213"><a href="#L213" aria-label="Line 213"> 213</a> </span>
+<span id="L214"><a href="#L214" aria-label="Line 214"> 214</a>     @app.get(&quot;/api/settings&quot;)</span>
+<span id="L215"><a href="#L215" aria-label="Line 215"> 215</a>     def get_settings():</span>
+<span id="L216"><a href="#L216" aria-label="Line 216"> 216</a>         with connection(path) as db:</span>
+<span id="L217"><a href="#L217" aria-label="Line 217"> 217</a>             return {</span>
+<span id="L218"><a href="#L218" aria-label="Line 218"> 218</a>                 &quot;settings&quot;: settings(db),</span>
+<span id="L219"><a href="#L219" aria-label="Line 219"> 219</a>                 &quot;rules&quot;: [</span>
+<span id="L220"><a href="#L220" aria-label="Line 220"> 220</a>                     {&quot;id&quot;: key, &quot;title&quot;: v[0], &quot;severity&quot;: v[1], &quot;mitre&quot;: v[2]}</span>
+<span id="L221"><a href="#L221" aria-label="Line 221"> 221</a>                     for key, v in RULES.items()</span>
+<span id="L222"><a href="#L222" aria-label="Line 222"> 222</a>                 ],</span>
+<span id="L223"><a href="#L223" aria-label="Line 223"> 223</a>             }</span>
+<span id="L224"><a href="#L224" aria-label="Line 224"> 224</a> </span>
+<span id="L225"><a href="#L225" aria-label="Line 225"> 225</a>     @app.put(&quot;/api/settings&quot;)</span>
+<span id="L226"><a href="#L226" aria-label="Line 226"> 226</a>     def put_settings(value: RuleSettings):</span>
+<span id="L227"><a href="#L227" aria-label="Line 227"> 227</a>         with connection(path) as db:</span>
+<span id="L228"><a href="#L228" aria-label="Line 228"> 228</a>             db.execute(&quot;BEGIN IMMEDIATE&quot;)</span>
+<span id="L229"><a href="#L229" aria-label="Line 229"> 229</a>             db.execute(</span>
+<span id="L230"><a href="#L230" aria-label="Line 230"> 230</a>                 &quot;UPDATE config SET body=? WHERE id=1&quot;, (json.dumps(value.model_dump()),)</span>
+<span id="L231"><a href="#L231" aria-label="Line 231"> 231</a>             )</span>
+<span id="L232"><a href="#L232" aria-label="Line 232"> 232</a>             count = reanalyze(db)</span>
+<span id="L233"><a href="#L233" aria-label="Line 233"> 233</a>         return {&quot;settings&quot;: value.model_dump(), &quot;alerts_total&quot;: count}</span>
+<span id="L234"><a href="#L234" aria-label="Line 234"> 234</a> </span>
+<span id="L235"><a href="#L235" aria-label="Line 235"> 235</a>     @app.get(&quot;/api/events&quot;)</span>
+<span id="L236"><a href="#L236" aria-label="Line 236"> 236</a>     def events(</span>
+<span id="L237"><a href="#L237" aria-label="Line 237"> 237</a>         q: str = Query(&quot;&quot;, max_length=200),</span>
+<span id="L238"><a href="#L238" aria-label="Line 238"> 238</a>         source: Literal[&quot;linux&quot;, &quot;windows&quot;] | None = None,</span>
+<span id="L239"><a href="#L239" aria-label="Line 239"> 239</a>         event_type: str = Query(&quot;&quot;, max_length=80),</span>
+<span id="L240"><a href="#L240" aria-label="Line 240"> 240</a>         source_ip: str = Query(&quot;&quot;, max_length=64),</span>
+<span id="L241"><a href="#L241" aria-label="Line 241"> 241</a>         user: str = Query(&quot;&quot;, max_length=200),</span>
+<span id="L242"><a href="#L242" aria-label="Line 242"> 242</a>         host: str = Query(&quot;&quot;, max_length=200),</span>
+<span id="L243"><a href="#L243" aria-label="Line 243"> 243</a>         start: str | None = None,</span>
+<span id="L244"><a href="#L244" aria-label="Line 244"> 244</a>         end: str | None = None,</span>
+<span id="L245"><a href="#L245" aria-label="Line 245"> 245</a>         limit: int = Query(50, ge=1, le=200),</span>
+<span id="L246"><a href="#L246" aria-label="Line 246"> 246</a>         offset: int = Query(0, ge=0),</span>
+<span id="L247"><a href="#L247" aria-label="Line 247"> 247</a>     ):</span>
+<span id="L248"><a href="#L248" aria-label="Line 248"> 248</a>         clauses, args = [], []</span>
+<span id="L249"><a href="#L249" aria-label="Line 249"> 249</a>         for field, value in [</span>
+<span id="L250"><a href="#L250" aria-label="Line 250"> 250</a>             (&quot;source&quot;, source),</span>
+<span id="L251"><a href="#L251" aria-label="Line 251"> 251</a>             (&quot;event_type&quot;, event_type),</span>
+<span id="L252"><a href="#L252" aria-label="Line 252"> 252</a>             (&quot;source_ip&quot;, source_ip),</span>
+<span id="L253"><a href="#L253" aria-label="Line 253"> 253</a>             (&quot;user&quot;, user),</span>
+<span id="L254"><a href="#L254" aria-label="Line 254"> 254</a>             (&quot;host&quot;, host),</span>
+<span id="L255"><a href="#L255" aria-label="Line 255"> 255</a>         ]:</span>
+<span id="L256"><a href="#L256" aria-label="Line 256"> 256</a>             if value:</span>
+<span id="L257"><a href="#L257" aria-label="Line 257"> 257</a>                 clauses.append(f&quot;{field}=?&quot;)</span>
+<span id="L258"><a href="#L258" aria-label="Line 258"> 258</a>                 args.append(value)</span>
+<span id="L259"><a href="#L259" aria-label="Line 259"> 259</a>         try:</span>
+<span id="L260"><a href="#L260" aria-label="Line 260"> 260</a>             if start:</span>
+<span id="L261"><a href="#L261" aria-label="Line 261"> 261</a>                 clauses.append(&quot;timestamp&gt;=?&quot;)</span>
+<span id="L262"><a href="#L262" aria-label="Line 262"> 262</a>                 args.append(timestamp(start))</span>
+<span id="L263"><a href="#L263" aria-label="Line 263"> 263</a>             if end:</span>
+<span id="L264"><a href="#L264" aria-label="Line 264"> 264</a>                 clauses.append(&quot;timestamp&lt;=?&quot;)</span>
+<span id="L265"><a href="#L265" aria-label="Line 265"> 265</a>                 args.append(timestamp(end))</span>
+<span id="L266"><a href="#L266" aria-label="Line 266"> 266</a>             if start and end and timestamp(start) &gt; timestamp(end):</span>
+<span id="L267"><a href="#L267" aria-label="Line 267"> 267</a>                 raise ValueError(&quot;Start must precede end&quot;)</span>
+<span id="L268"><a href="#L268" aria-label="Line 268"> 268</a>         except (ValueError, TypeError):</span>
+<span id="L269"><a href="#L269" aria-label="Line 269"> 269</a>             raise HTTPException(422, &quot;Invalid date range; use ISO 8601&quot;)</span>
+<span id="L270"><a href="#L270" aria-label="Line 270"> 270</a>         if q:</span>
+<span id="L271"><a href="#L271" aria-label="Line 271"> 271</a>             clauses.append(</span>
+<span id="L272"><a href="#L272" aria-label="Line 272"> 272</a>                 &quot;(instr(lower(raw), lower(?))&gt;0 OR instr(lower(host), lower(?))&gt;0 OR instr(lower(coalesce(user,&#x27;&#x27;)), lower(?))&gt;0)&quot;</span>
+<span id="L273"><a href="#L273" aria-label="Line 273"> 273</a>             )</span>
+<span id="L274"><a href="#L274" aria-label="Line 274"> 274</a>             args.extend([q, q, q])</span>
+<span id="L275"><a href="#L275" aria-label="Line 275"> 275</a>         where = &quot; WHERE &quot; + &quot; AND &quot;.join(clauses) if clauses else &quot;&quot;</span>
+<span id="L276"><a href="#L276" aria-label="Line 276"> 276</a>         with connection(path) as db:</span>
+<span id="L277"><a href="#L277" aria-label="Line 277"> 277</a>             total = db.execute(&quot;SELECT count(*) FROM events&quot; + where, args).fetchone()[</span>
+<span id="L278"><a href="#L278" aria-label="Line 278"> 278</a>                 0</span>
+<span id="L279"><a href="#L279" aria-label="Line 279"> 279</a>             ]</span>
+<span id="L280"><a href="#L280" aria-label="Line 280"> 280</a>             rows = db.execute(</span>
+<span id="L281"><a href="#L281" aria-label="Line 281"> 281</a>                 &quot;SELECT * FROM events&quot;</span>
+<span id="L282"><a href="#L282" aria-label="Line 282"> 282</a>                 + where</span>
+<span id="L283"><a href="#L283" aria-label="Line 283"> 283</a>                 + &quot; ORDER BY timestamp DESC,id LIMIT ? OFFSET ?&quot;,</span>
+<span id="L284"><a href="#L284" aria-label="Line 284"> 284</a>                 args + [limit, offset],</span>
+<span id="L285"><a href="#L285" aria-label="Line 285"> 285</a>             )</span>
+<span id="L286"><a href="#L286" aria-label="Line 286"> 286</a>             items = [event_dict(row) for row in rows]</span>
+<span id="L287"><a href="#L287" aria-label="Line 287"> 287</a>         return {&quot;total&quot;: total, &quot;items&quot;: items, &quot;limit&quot;: limit, &quot;offset&quot;: offset}</span>
+<span id="L288"><a href="#L288" aria-label="Line 288"> 288</a> </span>
+<span id="L289"><a href="#L289" aria-label="Line 289"> 289</a>     @app.get(&quot;/api/events/{identifier}&quot;)</span>
+<span id="L290"><a href="#L290" aria-label="Line 290"> 290</a>     def event_detail(identifier: str):</span>
+<span id="L291"><a href="#L291" aria-label="Line 291"> 291</a>         with connection(path) as db:</span>
+<span id="L292"><a href="#L292" aria-label="Line 292"> 292</a>             row = db.execute(</span>
+<span id="L293"><a href="#L293" aria-label="Line 293"> 293</a>                 &quot;SELECT * FROM events WHERE id=?&quot;, (identifier,)</span>
+<span id="L294"><a href="#L294" aria-label="Line 294"> 294</a>             ).fetchone()</span>
+<span id="L295"><a href="#L295" aria-label="Line 295"> 295</a>             if row is None:</span>
+<span id="L296"><a href="#L296" aria-label="Line 296"> 296</a>                 raise HTTPException(404, &quot;Event not found&quot;)</span>
+<span id="L297"><a href="#L297" aria-label="Line 297"> 297</a>             return event_dict(row)</span>
+<span id="L298"><a href="#L298" aria-label="Line 298"> 298</a> </span>
+<span id="L299"><a href="#L299" aria-label="Line 299"> 299</a>     @app.get(&quot;/api/alerts&quot;)</span>
+<span id="L300"><a href="#L300" aria-label="Line 300"> 300</a>     def alerts(</span>
+<span id="L301"><a href="#L301" aria-label="Line 301"> 301</a>         severity: Literal[&quot;critical&quot;, &quot;high&quot;, &quot;medium&quot;] | None = None,</span>
+<span id="L302"><a href="#L302" aria-label="Line 302"> 302</a>         status: Literal[&quot;new&quot;, &quot;investigating&quot;, &quot;resolved&quot;] | None = None,</span>
+<span id="L303"><a href="#L303" aria-label="Line 303"> 303</a>         limit: int = Query(50, ge=1, le=200),</span>
+<span id="L304"><a href="#L304" aria-label="Line 304"> 304</a>         offset: int = Query(0, ge=0),</span>
+<span id="L305"><a href="#L305" aria-label="Line 305"> 305</a>     ):</span>
+<span id="L306"><a href="#L306" aria-label="Line 306"> 306</a>         with connection(path) as db:</span>
+<span id="L307"><a href="#L307" aria-label="Line 307"> 307</a>             items = [</span>
+<span id="L308"><a href="#L308" aria-label="Line 308"> 308</a>                 {**json.loads(row[&quot;body&quot;]), &quot;status&quot;: row[&quot;status&quot;]}</span>
+<span id="L309"><a href="#L309" aria-label="Line 309"> 309</a>                 for row in db.execute(&quot;SELECT * FROM alerts&quot;)</span>
+<span id="L310"><a href="#L310" aria-label="Line 310"> 310</a>             ]</span>
+<span id="L311"><a href="#L311" aria-label="Line 311"> 311</a>         items = [</span>
+<span id="L312"><a href="#L312" aria-label="Line 312"> 312</a>             a</span>
+<span id="L313"><a href="#L313" aria-label="Line 313"> 313</a>             for a in items</span>
+<span id="L314"><a href="#L314" aria-label="Line 314"> 314</a>             if (not severity or a[&quot;severity&quot;] == severity)</span>
+<span id="L315"><a href="#L315" aria-label="Line 315"> 315</a>             and (not status or a[&quot;status&quot;] == status)</span>
+<span id="L316"><a href="#L316" aria-label="Line 316"> 316</a>         ]</span>
+<span id="L317"><a href="#L317" aria-label="Line 317"> 317</a>         items.sort(key=lambda a: (a[&quot;last_seen&quot;], a[&quot;id&quot;]), reverse=True)</span>
+<span id="L318"><a href="#L318" aria-label="Line 318"> 318</a>         return {&quot;total&quot;: len(items), &quot;items&quot;: items[offset : offset + limit]}</span>
+<span id="L319"><a href="#L319" aria-label="Line 319"> 319</a> </span>
+<span id="L320"><a href="#L320" aria-label="Line 320"> 320</a>     @app.get(&quot;/api/alerts/{identifier}&quot;)</span>
+<span id="L321"><a href="#L321" aria-label="Line 321"> 321</a>     def alert_detail(identifier: str):</span>
+<span id="L322"><a href="#L322" aria-label="Line 322"> 322</a>         with connection(path) as db:</span>
+<span id="L323"><a href="#L323" aria-label="Line 323"> 323</a>             # One read snapshot keeps legacy alert parameters consistent with</span>
+<span id="L324"><a href="#L324" aria-label="Line 324"> 324</a>             # their evidence/config even during an overlapping settings update.</span>
+<span id="L325"><a href="#L325" aria-label="Line 325"> 325</a>             db.execute(&quot;BEGIN&quot;)</span>
+<span id="L326"><a href="#L326" aria-label="Line 326"> 326</a>             row = db.execute(</span>
+<span id="L327"><a href="#L327" aria-label="Line 327"> 327</a>                 &quot;SELECT * FROM alerts WHERE id=?&quot;, (identifier,)</span>
+<span id="L328"><a href="#L328" aria-label="Line 328"> 328</a>             ).fetchone()</span>
+<span id="L329"><a href="#L329" aria-label="Line 329"> 329</a>             if row is None:</span>
+<span id="L330"><a href="#L330" aria-label="Line 330"> 330</a>                 raise HTTPException(404, &quot;Alert not found&quot;)</span>
+<span id="L331"><a href="#L331" aria-label="Line 331"> 331</a>             item = {**json.loads(row[&quot;body&quot;]), &quot;status&quot;: row[&quot;status&quot;]}</span>
+<span id="L332"><a href="#L332" aria-label="Line 332"> 332</a>             # Separate indexed queries avoid SQLite variable limits for long episodes.</span>
+<span id="L333"><a href="#L333" aria-label="Line 333"> 333</a>             item[&quot;events&quot;] = [</span>
+<span id="L334"><a href="#L334" aria-label="Line 334"> 334</a>                 event_dict(</span>
+<span id="L335"><a href="#L335" aria-label="Line 335"> 335</a>                     db.execute(&quot;SELECT * FROM events WHERE id=?&quot;, (eid,)).fetchone()</span>
+<span id="L336"><a href="#L336" aria-label="Line 336"> 336</a>                 )</span>
+<span id="L337"><a href="#L337" aria-label="Line 337"> 337</a>                 for eid in item[&quot;evidence&quot;]</span>
+<span id="L338"><a href="#L338" aria-label="Line 338"> 338</a>             ]</span>
+<span id="L339"><a href="#L339" aria-label="Line 339"> 339</a>             item[&quot;explanation&quot;] = explain_alert(item, item[&quot;events&quot;], settings(db))</span>
+<span id="L340"><a href="#L340" aria-label="Line 340"> 340</a>             item[&quot;dataset&quot;] = dataset_summary(item[&quot;events&quot;])</span>
+<span id="L341"><a href="#L341" aria-label="Line 341"> 341</a>             note = db.execute(</span>
+<span id="L342"><a href="#L342" aria-label="Line 342"> 342</a>                 &quot;SELECT body FROM notebooks WHERE alert_id=?&quot;, (identifier,)</span>
+<span id="L343"><a href="#L343" aria-label="Line 343"> 343</a>             ).fetchone()</span>
+<span id="L344"><a href="#L344" aria-label="Line 344"> 344</a>             item[&quot;notebook&quot;] = json.loads(note[&quot;body&quot;]) if note else None</span>
+<span id="L345"><a href="#L345" aria-label="Line 345"> 345</a>             return item</span>
+<span id="L346"><a href="#L346" aria-label="Line 346"> 346</a> </span>
+<span id="L347"><a href="#L347" aria-label="Line 347"> 347</a>     @app.get(&quot;/api/lab&quot;)</span>
+<span id="L348"><a href="#L348" aria-label="Line 348"> 348</a>     def lab_catalog():</span>
+<span id="L349"><a href="#L349" aria-label="Line 349"> 349</a>         return {&quot;scenarios&quot;: SCENARIOS, &quot;max_evidence_records&quot;: MAX_REPLAY_EVENTS}</span>
+<span id="L350"><a href="#L350" aria-label="Line 350"> 350</a> </span>
+<span id="L351"><a href="#L351" aria-label="Line 351"> 351</a>     @app.post(&quot;/api/lab/replay&quot;)</span>
+<span id="L352"><a href="#L352" aria-label="Line 352"> 352</a>     def lab_replay(value: ReplayRequest):</span>
+<span id="L353"><a href="#L353" aria-label="Line 353"> 353</a>         if bool(value.scenario) == bool(value.alert_id):</span>
+<span id="L354"><a href="#L354" aria-label="Line 354"> 354</a>             raise HTTPException(422, &quot;Choose exactly one scenario or alert_id&quot;)</span>
+<span id="L355"><a href="#L355" aria-label="Line 355"> 355</a>         if value.alert_id:</span>
+<span id="L356"><a href="#L356" aria-label="Line 356"> 356</a>             with connection(path) as db:</span>
+<span id="L357"><a href="#L357" aria-label="Line 357"> 357</a>                 db.execute(&quot;BEGIN&quot;)</span>
+<span id="L358"><a href="#L358" aria-label="Line 358"> 358</a>                 row = db.execute(</span>
+<span id="L359"><a href="#L359" aria-label="Line 359"> 359</a>                     &quot;SELECT body FROM alerts WHERE id=?&quot;, (value.alert_id,)</span>
+<span id="L360"><a href="#L360" aria-label="Line 360"> 360</a>                 ).fetchone()</span>
+<span id="L361"><a href="#L361" aria-label="Line 361"> 361</a>                 if row is None:</span>
+<span id="L362"><a href="#L362" aria-label="Line 362"> 362</a>                     raise HTTPException(404, &quot;Alert not found&quot;)</span>
+<span id="L363"><a href="#L363" aria-label="Line 363"> 363</a>                 alert = json.loads(row[&quot;body&quot;])</span>
+<span id="L364"><a href="#L364" aria-label="Line 364"> 364</a>                 baseline = settings(db)</span>
+<span id="L365"><a href="#L365" aria-label="Line 365"> 365</a>                 if len(alert[&quot;evidence&quot;]) &gt; MAX_REPLAY_EVENTS:</span>
+<span id="L366"><a href="#L366" aria-label="Line 366"> 366</a>                     raise HTTPException(</span>
+<span id="L367"><a href="#L367" aria-label="Line 367"> 367</a>                         422,</span>
+<span id="L368"><a href="#L368" aria-label="Line 368"> 368</a>                         f&quot;Replay supports at most {MAX_REPLAY_EVENTS} evidence records; this alert is too large&quot;,</span>
+<span id="L369"><a href="#L369" aria-label="Line 369"> 369</a>                     )</span>
+<span id="L370"><a href="#L370" aria-label="Line 370"> 370</a>                 events = [</span>
+<span id="L371"><a href="#L371" aria-label="Line 371"> 371</a>                     event_dict(</span>
+<span id="L372"><a href="#L372" aria-label="Line 372"> 372</a>                         db.execute(&quot;SELECT * FROM events WHERE id=?&quot;, (eid,)).fetchone()</span>
+<span id="L373"><a href="#L373" aria-label="Line 373"> 373</a>                     )</span>
+<span id="L374"><a href="#L374" aria-label="Line 374"> 374</a>                     for eid in alert[&quot;evidence&quot;]</span>
+<span id="L375"><a href="#L375" aria-label="Line 375"> 375</a>                 ]</span>
+<span id="L376"><a href="#L376" aria-label="Line 376"> 376</a>             scope = {</span>
+<span id="L377"><a href="#L377" aria-label="Line 377"> 377</a>                 &quot;kind&quot;: &quot;alert_evidence&quot;,</span>
+<span id="L378"><a href="#L378" aria-label="Line 378"> 378</a>                 &quot;alert_id&quot;: value.alert_id,</span>
+<span id="L379"><a href="#L379" aria-label="Line 379"> 379</a>                 &quot;title&quot;: alert[&quot;title&quot;],</span>
+<span id="L380"><a href="#L380" aria-label="Line 380"> 380</a>                 &quot;dataset&quot;: dataset_summary(events),</span>
+<span id="L381"><a href="#L381" aria-label="Line 381"> 381</a>                 &quot;limits&quot;: &quot;Only this alert&#x27;s saved evidence is replayed. Other stored events are excluded. This is not a coverage or false-positive measurement.&quot;,</span>
+<span id="L382"><a href="#L382" aria-label="Line 382"> 382</a>             }</span>
+<span id="L383"><a href="#L383" aria-label="Line 383"> 383</a>         else:</span>
+<span id="L384"><a href="#L384" aria-label="Line 384"> 384</a>             try:</span>
+<span id="L385"><a href="#L385" aria-label="Line 385"> 385</a>                 events = scenario_events(value.scenario)</span>
+<span id="L386"><a href="#L386" aria-label="Line 386"> 386</a>             except ValueError as exc:</span>
+<span id="L387"><a href="#L387" aria-label="Line 387"> 387</a>                 raise HTTPException(422, str(exc))</span>
+<span id="L388"><a href="#L388" aria-label="Line 388"> 388</a>             scope = {</span>
+<span id="L389"><a href="#L389" aria-label="Line 389"> 389</a>                 &quot;kind&quot;: &quot;synthetic_scenario&quot;,</span>
+<span id="L390"><a href="#L390" aria-label="Line 390"> 390</a>                 &quot;scenario&quot;: value.scenario,</span>
+<span id="L391"><a href="#L391" aria-label="Line 391"> 391</a>                 &quot;title&quot;: next(</span>
+<span id="L392"><a href="#L392" aria-label="Line 392"> 392</a>                     s[&quot;title&quot;] for s in SCENARIOS if s[&quot;id&quot;] == value.scenario</span>
+<span id="L393"><a href="#L393" aria-label="Line 393"> 393</a>                 ),</span>
+<span id="L394"><a href="#L394" aria-label="Line 394"> 394</a>                 &quot;limits&quot;: &quot;Synthetic records in an isolated experiment. They are never imported into your workspace.&quot;,</span>
+<span id="L395"><a href="#L395" aria-label="Line 395"> 395</a>             }</span>
+<span id="L396"><a href="#L396" aria-label="Line 396"> 396</a>             with connection(path) as db:</span>
+<span id="L397"><a href="#L397" aria-label="Line 397"> 397</a>                 baseline = settings(db)</span>
+<span id="L398"><a href="#L398" aria-label="Line 398"> 398</a>         return {</span>
+<span id="L399"><a href="#L399" aria-label="Line 399"> 399</a>             **replay(events, value.settings.model_dump()),</span>
+<span id="L400"><a href="#L400" aria-label="Line 400"> 400</a>             &quot;scope&quot;: scope,</span>
+<span id="L401"><a href="#L401" aria-label="Line 401"> 401</a>             &quot;baseline&quot;: {</span>
+<span id="L402"><a href="#L402" aria-label="Line 402"> 402</a>                 &quot;settings&quot;: baseline,</span>
+<span id="L403"><a href="#L403" aria-label="Line 403"> 403</a>                 &quot;alerts_total&quot;: len(detect(events, baseline)),</span>
+<span id="L404"><a href="#L404" aria-label="Line 404"> 404</a>             },</span>
+<span id="L405"><a href="#L405" aria-label="Line 405"> 405</a>         }</span>
+<span id="L406"><a href="#L406" aria-label="Line 406"> 406</a> </span>
+<span id="L407"><a href="#L407" aria-label="Line 407"> 407</a>     @app.put(&quot;/api/alerts/{identifier}/notebook&quot;)</span>
+<span id="L408"><a href="#L408" aria-label="Line 408"> 408</a>     def save_notebook(identifier: str, value: AnalystNote):</span>
+<span id="L409"><a href="#L409" aria-label="Line 409"> 409</a>         with connection(path) as db:</span>
+<span id="L410"><a href="#L410" aria-label="Line 410"> 410</a>             db.execute(&quot;BEGIN IMMEDIATE&quot;)</span>
+<span id="L411"><a href="#L411" aria-label="Line 411"> 411</a>             row = db.execute(</span>
+<span id="L412"><a href="#L412" aria-label="Line 412"> 412</a>                 &quot;SELECT * FROM alerts WHERE id=?&quot;, (identifier,)</span>
+<span id="L413"><a href="#L413" aria-label="Line 413"> 413</a>             ).fetchone()</span>
+<span id="L414"><a href="#L414" aria-label="Line 414"> 414</a>             if row is None:</span>
+<span id="L415"><a href="#L415" aria-label="Line 415"> 415</a>                 raise HTTPException(404, &quot;Alert not found&quot;)</span>
+<span id="L416"><a href="#L416" aria-label="Line 416"> 416</a>             alert = {**json.loads(row[&quot;body&quot;]), &quot;status&quot;: row[&quot;status&quot;]}</span>
+<span id="L417"><a href="#L417" aria-label="Line 417"> 417</a>             evidence_ids = alert[&quot;evidence&quot;]</span>
+<span id="L418"><a href="#L418" aria-label="Line 418"> 418</a>             snapshot_ids = (</span>
+<span id="L419"><a href="#L419" aria-label="Line 419"> 419</a>                 evidence_ids</span>
+<span id="L420"><a href="#L420" aria-label="Line 420"> 420</a>                 if len(evidence_ids) &lt;= MAX_NOTE_EVIDENCE</span>
+<span id="L421"><a href="#L421" aria-label="Line 421"> 421</a>                 else evidence_ids[: MAX_NOTE_EVIDENCE - 1] + evidence_ids[-1:]</span>
+<span id="L422"><a href="#L422" aria-label="Line 422"> 422</a>             )</span>
+<span id="L423"><a href="#L423" aria-label="Line 423"> 423</a>             events = [</span>
+<span id="L424"><a href="#L424" aria-label="Line 424"> 424</a>                 event_dict(</span>
+<span id="L425"><a href="#L425" aria-label="Line 425"> 425</a>                     db.execute(&quot;SELECT * FROM events WHERE id=?&quot;, (eid,)).fetchone()</span>
+<span id="L426"><a href="#L426" aria-label="Line 426"> 426</a>                 )</span>
+<span id="L427"><a href="#L427" aria-label="Line 427"> 427</a>                 for eid in snapshot_ids</span>
+<span id="L428"><a href="#L428" aria-label="Line 428"> 428</a>             ]</span>
+<span id="L429"><a href="#L429" aria-label="Line 429"> 429</a>             item = {</span>
+<span id="L430"><a href="#L430" aria-label="Line 430"> 430</a>                 &quot;alert_id&quot;: identifier,</span>
+<span id="L431"><a href="#L431" aria-label="Line 431"> 431</a>                 &quot;saved_at&quot;: datetime.now(timezone.utc).isoformat(),</span>
+<span id="L432"><a href="#L432" aria-label="Line 432"> 432</a>                 &quot;note&quot;: value.model_dump(),</span>
+<span id="L433"><a href="#L433" aria-label="Line 433"> 433</a>                 &quot;alert&quot;: alert,</span>
+<span id="L434"><a href="#L434" aria-label="Line 434"> 434</a>                 &quot;events&quot;: events,</span>
+<span id="L435"><a href="#L435" aria-label="Line 435"> 435</a>                 &quot;snapshot_policy&quot;: &quot;all&quot;</span>
+<span id="L436"><a href="#L436" aria-label="Line 436"> 436</a>                 if len(evidence_ids) &lt;= MAX_NOTE_EVIDENCE</span>
+<span id="L437"><a href="#L437" aria-label="Line 437"> 437</a>                 else &quot;first_and_final&quot;,</span>
+<span id="L438"><a href="#L438" aria-label="Line 438"> 438</a>                 &quot;evidence_omitted&quot;: max(0, len(alert[&quot;evidence&quot;]) - len(events)),</span>
+<span id="L439"><a href="#L439" aria-label="Line 439"> 439</a>                 &quot;scope&quot;: &quot;Manual analyst notes and a bounded evidence snapshot. Not a verified verdict or an audit history.&quot;,</span>
+<span id="L440"><a href="#L440" aria-label="Line 440"> 440</a>             }</span>
+<span id="L441"><a href="#L441" aria-label="Line 441"> 441</a>             db.execute(</span>
+<span id="L442"><a href="#L442" aria-label="Line 442"> 442</a>                 &quot;INSERT INTO notebooks VALUES (?,?) ON CONFLICT(alert_id) DO UPDATE SET body=excluded.body&quot;,</span>
+<span id="L443"><a href="#L443" aria-label="Line 443"> 443</a>                 (identifier, json.dumps(item)),</span>
+<span id="L444"><a href="#L444" aria-label="Line 444"> 444</a>             )</span>
+<span id="L445"><a href="#L445" aria-label="Line 445"> 445</a>         return item</span>
+<span id="L446"><a href="#L446" aria-label="Line 446"> 446</a> </span>
+<span id="L447"><a href="#L447" aria-label="Line 447"> 447</a>     @app.get(&quot;/api/notebooks&quot;)</span>
+<span id="L448"><a href="#L448" aria-label="Line 448"> 448</a>     def notebooks():</span>
+<span id="L449"><a href="#L449" aria-label="Line 449"> 449</a>         with connection(path) as db:</span>
+<span id="L450"><a href="#L450" aria-label="Line 450"> 450</a>             items = []</span>
+<span id="L451"><a href="#L451" aria-label="Line 451"> 451</a>             for row in db.execute(</span>
+<span id="L452"><a href="#L452" aria-label="Line 452"> 452</a>                 &quot;SELECT notebooks.body, alerts.id AS active_id FROM notebooks LEFT JOIN alerts ON alerts.id=notebooks.alert_id&quot;</span>
+<span id="L453"><a href="#L453" aria-label="Line 453"> 453</a>             ):</span>
+<span id="L454"><a href="#L454" aria-label="Line 454"> 454</a>                 note = json.loads(row[&quot;body&quot;])</span>
+<span id="L455"><a href="#L455" aria-label="Line 455"> 455</a>                 items.append(</span>
+<span id="L456"><a href="#L456" aria-label="Line 456"> 456</a>                     {</span>
+<span id="L457"><a href="#L457" aria-label="Line 457"> 457</a>                         &quot;alert_id&quot;: note[&quot;alert_id&quot;],</span>
+<span id="L458"><a href="#L458" aria-label="Line 458"> 458</a>                         &quot;title&quot;: note[&quot;alert&quot;][&quot;title&quot;],</span>
+<span id="L459"><a href="#L459" aria-label="Line 459"> 459</a>                         &quot;saved_at&quot;: note[&quot;saved_at&quot;],</span>
+<span id="L460"><a href="#L460" aria-label="Line 460"> 460</a>                         &quot;assessment&quot;: note[&quot;note&quot;][&quot;assessment&quot;],</span>
+<span id="L461"><a href="#L461" aria-label="Line 461"> 461</a>                         &quot;active&quot;: row[&quot;active_id&quot;] is not None,</span>
+<span id="L462"><a href="#L462" aria-label="Line 462"> 462</a>                     }</span>
+<span id="L463"><a href="#L463" aria-label="Line 463"> 463</a>                 )</span>
+<span id="L464"><a href="#L464" aria-label="Line 464"> 464</a>         return {&quot;items&quot;: sorted(items, key=lambda n: n[&quot;saved_at&quot;], reverse=True)}</span>
+<span id="L465"><a href="#L465" aria-label="Line 465"> 465</a> </span>
+<span id="L466"><a href="#L466" aria-label="Line 466"> 466</a>     @app.get(&quot;/api/notebooks/{identifier}&quot;)</span>
+<span id="L467"><a href="#L467" aria-label="Line 467"> 467</a>     def notebook_detail(identifier: str):</span>
+<span id="L468"><a href="#L468" aria-label="Line 468"> 468</a>         with connection(path) as db:</span>
+<span id="L469"><a href="#L469" aria-label="Line 469"> 469</a>             row = db.execute(</span>
+<span id="L470"><a href="#L470" aria-label="Line 470"> 470</a>                 &quot;SELECT body FROM notebooks WHERE alert_id=?&quot;, (identifier,)</span>
+<span id="L471"><a href="#L471" aria-label="Line 471"> 471</a>             ).fetchone()</span>
+<span id="L472"><a href="#L472" aria-label="Line 472"> 472</a>             if row is None:</span>
+<span id="L473"><a href="#L473" aria-label="Line 473"> 473</a>                 raise HTTPException(404, &quot;Notebook not found&quot;)</span>
+<span id="L474"><a href="#L474" aria-label="Line 474"> 474</a>             return json.loads(row[&quot;body&quot;])</span>
+<span id="L475"><a href="#L475" aria-label="Line 475"> 475</a> </span>
+<span id="L476"><a href="#L476" aria-label="Line 476"> 476</a>     @app.patch(&quot;/api/alerts/{identifier}&quot;)</span>
+<span id="L477"><a href="#L477" aria-label="Line 477"> 477</a>     def update_alert(identifier: str, value: AlertStatus):</span>
+<span id="L478"><a href="#L478" aria-label="Line 478"> 478</a>         with connection(path) as db:</span>
+<span id="L479"><a href="#L479" aria-label="Line 479"> 479</a>             changed = db.execute(</span>
+<span id="L480"><a href="#L480" aria-label="Line 480"> 480</a>                 &quot;UPDATE alerts SET status=? WHERE id=?&quot;, (value.status, identifier)</span>
+<span id="L481"><a href="#L481" aria-label="Line 481"> 481</a>             ).rowcount</span>
+<span id="L482"><a href="#L482" aria-label="Line 482"> 482</a>             if not changed:</span>
+<span id="L483"><a href="#L483" aria-label="Line 483"> 483</a>                 raise HTTPException(404, &quot;Alert not found&quot;)</span>
+<span id="L484"><a href="#L484" aria-label="Line 484"> 484</a>         return {&quot;status&quot;: value.status}</span>
+<span id="L485"><a href="#L485" aria-label="Line 485"> 485</a> </span>
+<span id="L486"><a href="#L486" aria-label="Line 486"> 486</a>     @app.get(&quot;/api/stats&quot;)</span>
+<span id="L487"><a href="#L487" aria-label="Line 487"> 487</a>     def stats():</span>
+<span id="L488"><a href="#L488" aria-label="Line 488"> 488</a>         with connection(path) as db:</span>
+<span id="L489"><a href="#L489" aria-label="Line 489"> 489</a>             db.execute(&quot;BEGIN&quot;)</span>
+<span id="L490"><a href="#L490" aria-label="Line 490"> 490</a>             count = db.execute(&quot;SELECT count(*) FROM events&quot;).fetchone()[0]</span>
+<span id="L491"><a href="#L491" aria-label="Line 491"> 491</a>             hosts = db.execute(&quot;SELECT count(DISTINCT host) FROM events&quot;).fetchone()[0]</span>
+<span id="L492"><a href="#L492" aria-label="Line 492"> 492</a>             latest = db.execute(&quot;SELECT max(timestamp) FROM events&quot;).fetchone()[0]</span>
+<span id="L493"><a href="#L493" aria-label="Line 493"> 493</a>             sources = dict(</span>
+<span id="L494"><a href="#L494" aria-label="Line 494"> 494</a>                 db.execute(&quot;SELECT source,count(*) FROM events GROUP BY source&quot;)</span>
+<span id="L495"><a href="#L495" aria-label="Line 495"> 495</a>             )</span>
+<span id="L496"><a href="#L496" aria-label="Line 496"> 496</a>             event_timeline = dict(</span>
+<span id="L497"><a href="#L497" aria-label="Line 497"> 497</a>                 db.execute(</span>
+<span id="L498"><a href="#L498" aria-label="Line 498"> 498</a>                     &quot;SELECT substr(timestamp,1,13),count(*) FROM events GROUP BY substr(timestamp,1,13) ORDER BY 1&quot;</span>
+<span id="L499"><a href="#L499" aria-label="Line 499"> 499</a>                 )</span>
+<span id="L500"><a href="#L500" aria-label="Line 500"> 500</a>             )</span>
+<span id="L501"><a href="#L501" aria-label="Line 501"> 501</a>             alerts = [</span>
+<span id="L502"><a href="#L502" aria-label="Line 502"> 502</a>                 {**json.loads(r[&quot;body&quot;]), &quot;status&quot;: r[&quot;status&quot;]}</span>
+<span id="L503"><a href="#L503" aria-label="Line 503"> 503</a>                 for r in db.execute(&quot;SELECT * FROM alerts&quot;)</span>
+<span id="L504"><a href="#L504" aria-label="Line 504"> 504</a>             ]</span>
+<span id="L505"><a href="#L505" aria-label="Line 505"> 505</a>             gaps = sum(</span>
+<span id="L506"><a href="#L506" aria-label="Line 506"> 506</a>                 correlation_key(event_dict(r)) is None</span>
+<span id="L507"><a href="#L507" aria-label="Line 507"> 507</a>                 for r in db.execute(&quot;SELECT * FROM events&quot;)</span>
+<span id="L508"><a href="#L508" aria-label="Line 508"> 508</a>             )</span>
+<span id="L509"><a href="#L509" aria-label="Line 509"> 509</a>             dataset = dataset_summary(</span>
+<span id="L510"><a href="#L510" aria-label="Line 510"> 510</a>                 [dict(r) for r in db.execute(&quot;SELECT id FROM events&quot;)]</span>
+<span id="L511"><a href="#L511" aria-label="Line 511"> 511</a>             )</span>
+<span id="L512"><a href="#L512" aria-label="Line 512"> 512</a>         severity = {</span>
+<span id="L513"><a href="#L513" aria-label="Line 513"> 513</a>             key: sum(a[&quot;severity&quot;] == key for a in alerts)</span>
+<span id="L514"><a href="#L514" aria-label="Line 514"> 514</a>             for key in (&quot;critical&quot;, &quot;high&quot;, &quot;medium&quot;)</span>
+<span id="L515"><a href="#L515" aria-label="Line 515"> 515</a>         }</span>
+<span id="L516"><a href="#L516" aria-label="Line 516"> 516</a>         alert_timeline = {}</span>
+<span id="L517"><a href="#L517" aria-label="Line 517"> 517</a>         for a in alerts:</span>
+<span id="L518"><a href="#L518" aria-label="Line 518"> 518</a>             hour = a[&quot;last_seen&quot;][:13]</span>
+<span id="L519"><a href="#L519" aria-label="Line 519"> 519</a>             alert_timeline[hour] = alert_timeline.get(hour, 0) + 1</span>
+<span id="L520"><a href="#L520" aria-label="Line 520"> 520</a>         return {</span>
+<span id="L521"><a href="#L521" aria-label="Line 521"> 521</a>             &quot;events&quot;: count,</span>
+<span id="L522"><a href="#L522" aria-label="Line 522"> 522</a>             &quot;dataset&quot;: dataset,</span>
+<span id="L523"><a href="#L523" aria-label="Line 523"> 523</a>             &quot;alerts&quot;: len(alerts),</span>
+<span id="L524"><a href="#L524" aria-label="Line 524"> 524</a>             &quot;hosts&quot;: hosts,</span>
+<span id="L525"><a href="#L525" aria-label="Line 525"> 525</a>             &quot;latest_event&quot;: latest,</span>
+<span id="L526"><a href="#L526" aria-label="Line 526"> 526</a>             &quot;sources&quot;: sources,</span>
+<span id="L527"><a href="#L527" aria-label="Line 527"> 527</a>             &quot;severity&quot;: severity,</span>
+<span id="L528"><a href="#L528" aria-label="Line 528"> 528</a>             &quot;uncorrelated_events&quot;: gaps,</span>
+<span id="L529"><a href="#L529" aria-label="Line 529"> 529</a>             &quot;open_alerts&quot;: sum(a[&quot;status&quot;] != &quot;resolved&quot; for a in alerts),</span>
+<span id="L530"><a href="#L530" aria-label="Line 530"> 530</a>             &quot;timeline&quot;: [</span>
+<span id="L531"><a href="#L531" aria-label="Line 531"> 531</a>                 {</span>
+<span id="L532"><a href="#L532" aria-label="Line 532"> 532</a>                     &quot;hour&quot;: h + &quot;:00:00Z&quot;,</span>
+<span id="L533"><a href="#L533" aria-label="Line 533"> 533</a>                     &quot;events&quot;: event_timeline.get(h, 0),</span>
+<span id="L534"><a href="#L534" aria-label="Line 534"> 534</a>                     &quot;alerts&quot;: alert_timeline.get(h, 0),</span>
+<span id="L535"><a href="#L535" aria-label="Line 535"> 535</a>                 }</span>
+<span id="L536"><a href="#L536" aria-label="Line 536"> 536</a>                 for h in sorted(set(event_timeline) | set(alert_timeline))</span>
+<span id="L537"><a href="#L537" aria-label="Line 537"> 537</a>             ],</span>
+<span id="L538"><a href="#L538" aria-label="Line 538"> 538</a>             &quot;recent_alerts&quot;: sorted(alerts, key=lambda a: a[&quot;last_seen&quot;], reverse=True)[</span>
+<span id="L539"><a href="#L539" aria-label="Line 539"> 539</a>                 :5</span>
+<span id="L540"><a href="#L540" aria-label="Line 540"> 540</a>             ],</span>
+<span id="L541"><a href="#L541" aria-label="Line 541"> 541</a>         }</span>
+<span id="L542"><a href="#L542" aria-label="Line 542"> 542</a> </span>
+<span id="L543"><a href="#L543" aria-label="Line 543"> 543</a>     app.mount(&quot;/static&quot;, StaticFiles(directory=ROOT / &quot;static&quot;), name=&quot;static&quot;)</span>
+<span id="L544"><a href="#L544" aria-label="Line 544"> 544</a> </span>
+<span id="L545"><a href="#L545" aria-label="Line 545"> 545</a>     @app.get(&quot;/&quot;, include_in_schema=False)</span>
+<span id="L546"><a href="#L546" aria-label="Line 546"> 546</a>     def index():</span>
+<span id="L547"><a href="#L547" aria-label="Line 547"> 547</a>         return FileResponse(ROOT / &quot;static&quot; / &quot;index.html&quot;)</span>
+<span id="L548"><a href="#L548" aria-label="Line 548"> 548</a> </span>
+<span id="L549"><a href="#L549" aria-label="Line 549"> 549</a>     @app.get(&quot;/docs&quot;, include_in_schema=False)</span>
+<span id="L550"><a href="#L550" aria-label="Line 550"> 550</a>     def api_docs():</span>
+<span id="L551"><a href="#L551" aria-label="Line 551"> 551</a>         return FileResponse(ROOT / &quot;static&quot; / &quot;api.html&quot;)</span>
+<span id="L552"><a href="#L552" aria-label="Line 552"> 552</a> </span>
+<span id="L553"><a href="#L553" aria-label="Line 553"> 553</a>     return app</span>
 <span id="L554"><a href="#L554" aria-label="Line 554"> 554</a> </span>
-<span id="L555"><a href="#L555" aria-label="Line 555"> 555</a> app = create_app()</span></code></pre></main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>
+<span id="L555"><a href="#L555" aria-label="Line 555"> 555</a> </span>
+<span id="L556"><a href="#L556" aria-label="Line 556"> 556</a> app = create_app()</span></code></pre></main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

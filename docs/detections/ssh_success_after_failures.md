@@ -107,7 +107,7 @@ Across the SSH and Windows rules, password spraying across accounts and distribu
 2. Review session activity in separately collected host logs.
 3. Record the remaining uncertainty before taking account or host action.
 
-LogSentinel automatically parses, deduplicates, correlates, and links evidence. It does not contact users, query account state, collect session commands, or perform containment.
+LogEssential automatically parses, deduplicates, correlates, and links evidence. It does not contact users, query account state, collect session commands, or perform containment.
 
 ## ATT&CK interpretation
 

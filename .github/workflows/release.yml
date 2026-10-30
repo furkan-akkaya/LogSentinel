@@ -1,0 +1,68 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - name: Tag, package and module versions agree
+        run: |
+          uv venv .venv
+          uv pip install -r requirements.txt
+          uv pip install -e '.[test,docs]'
+          .venv/bin/python -c 'import os,tomllib,logsentinel; v=tomllib.load(open("pyproject.toml","rb"))["project"]["version"]; assert os.environ["GITHUB_REF_NAME"] == "v"+v; assert logsentinel.__version__ == v'
+      - name: Tests and current examples
+        run: |
+          .venv/bin/python -m pytest
+          .venv/bin/python tools/verify_examples.py
+      - name: Audit the exact runtime lock
+        run: uvx pip-audit -r requirements.txt --disable-pip
+      - name: Build and inspect wheel and source
+        run: |
+          uv build
+          .venv/bin/python tools/check_archives.py dist/*.whl dist/*.tar.gz
+          mkdir /tmp/source
+          tar xzf dist/*.tar.gz -C /tmp/source --strip-components=1
+          uv venv /tmp/source-check
+          uv pip install --python /tmp/source-check/bin/python -r /tmp/source/requirements.txt
+          uv pip install --python /tmp/source-check/bin/python -e '/tmp/source[test,docs]'
+          (cd /tmp/source && /tmp/source-check/bin/python -m pytest)
+      - name: Clean wheel outside the checkout
+        run: |
+          uv venv /tmp/wheel-check
+          uv pip install --python /tmp/wheel-check/bin/python -r requirements.txt dist/*.whl
+          /tmp/wheel-check/bin/python -I tools/release_smoke.py "${GITHUB_REF_NAME#v}"
+      - name: Lock, SBOM and checksums
+        run: |
+          cp requirements.txt "dist/logsentinel-${GITHUB_REF_NAME#v}-requirements.txt"
+          uvx cyclonedx-py requirements requirements.txt --output-file dist/logsentinel-sbom.cdx.json
+          (cd dist && sha256sum * > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+  draft:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Draft beta release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          awk '/^## / {if(found) exit; if(index($0, "## 1.2.0b1") == 1) found=1} found' CHANGELOG.md > notes.md
+          test -s notes.md
+          gh release create "$GITHUB_REF_NAME" dist/* --draft --prerelease --title "LogEssential $GITHUB_REF_NAME" --notes-file notes.md

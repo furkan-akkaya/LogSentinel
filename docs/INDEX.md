@@ -1,6 +1,6 @@
-# LogSentinel project guide
+# LogEssential project guide
 
-LogSentinel makes authentication activity easier to investigate. Import Linux or Windows files, review five rule-based detections, and follow each alert to its source evidence.
+LogEssential makes authentication activity easier to investigate. Import Linux or Windows files, review five rule-based detections, and follow each alert to its source evidence.
 
 The reproducible demo contains **85 events, four hosts, and five alerts**. Every result comes from the same parser and detection engine used for uploads.
 
@@ -37,7 +37,7 @@ Read the [synthetic SSH case study](reports/SSH_CASE_STUDY.md) for a concise tec
 - [Architecture](ARCHITECTURE.md): separate modules, atomic transactions, replay, and stable identities.
 - [Formats and source validation](FORMATS.md): supported inputs and what declared source fields can establish.
 - [Security model](../SECURITY.md): loopback-only operation, plaintext data, and no authentication.
-- [Validation](VALIDATION.md): tests actually executed, plus unverified environments.
+- [Current beta validation](VALIDATION_PUBLIC_BETA.md): tests actually executed, plus unverified environments.
 - [Review follow-up](REVIEW_NOTES.md): previous findings compared with the current implementation.
 - [Portfolio presentation](PORTFOLIO.md): a short English description and a Turkish presentation narrative.
 
