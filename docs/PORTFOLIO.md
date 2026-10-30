@@ -2,7 +2,7 @@
 
 ## Short English description
 
-LogSentinel is a local mini SIEM for Linux and Windows authentication logs. It normalizes records into SQLite and applies five configurable event-time rules. Each alert includes its matching identity, thresholds, and source evidence. The bundled demo produces 85 events and five explainable alerts without a lab server.
+LogEssential is a local mini SIEM for Linux and Windows authentication logs. It normalizes records into SQLite and applies five configurable event-time rules. Each alert includes its matching identity, thresholds, and source evidence. The bundled demo produces 85 events and five explainable alerts without a lab server.
 
 ## Technical decisions to show
 
@@ -16,7 +16,7 @@ These statements describe the implementation. They do not assert independent aut
 
 ## Kısa Türkçe sunum anlatısı
 
-LogSentinel, Linux ve Windows kimlik doğrulama kayıtlarını inceleyen yerel bir güvenlik analiz projesidir. Amaç, şüpheli giriş örüntülerini kaynak kayıtlarla açıklamaktır.
+LogEssential, Linux ve Windows kimlik doğrulama kayıtlarını inceleyen yerel bir güvenlik analiz projesidir. Amaç, şüpheli giriş örüntülerini kaynak kayıtlarla açıklamaktır.
 
 Uygulama dosyayı okur, olayları ortak şemaya dönüştürür ve SQLite içinde saklar. Beş kural, olay zamanını ve kimlik alanlarını kullanarak uyarı üretir. Kullanıcı her uyarının kanıtlarını arayüzden inceleyebilir.
 
@@ -35,3 +35,13 @@ Sentetik demo, gerçek motorla 85 olaydan beş uyarı üretir. Proje dosya taban
 5. Show the tested Windows source-validation rule and its compatibility limit.
 
 Use only synthetic screenshots and samples. The local app has no authentication; do not expose it publicly as a portfolio service. Publish reviewed source and screenshots through your own normal publishing process.
+
+## Demonstrate v1.2 without inventing a learning story
+
+1. Open an alert and show its actual raw records.
+2. Replay that evidence in Detection Lab and change one parameter.
+3. Compare the 299-second and 300-second boundary experiment.
+4. Explain why the cross-account scenario produces no alerts.
+5. Save an observation, hypothesis and next evidence request in Case Notes.
+
+These behaviors demonstrate parsing, event-time correlation, rule testing, evidence handling, transaction design and analyst reasoning. They do not establish course completion, independent authorship, professional SOC experience, or production detection accuracy.

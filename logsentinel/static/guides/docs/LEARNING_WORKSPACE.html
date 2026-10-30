@@ -1,0 +1,160 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Learning through real detections · v1.2 · LogEssential</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="learning-through-real-detections--v12">Learning through real detections · v1.2</h1>
+<p>LogEssential now connects an operational alert to an isolated experiment and a saved investigation. The learning material follows the implemented rules, including their blind spots.</p>
+<h2 id="evidence--experiment--reasoning">Evidence → experiment → reasoning</h2>
+<pre><code class="language-mermaid">flowchart LR
+    A[Imported authentication events] --&gt; B[Production detection engine]
+    B --&gt; C[Alert with original evidence]
+    C --&gt; D[Detection Lab: replay evidence only]
+    D --&gt; B
+    C --&gt; E[Manual Case Notes]
+    E --&gt; F[Bounded evidence snapshot in SQLite]
+    G[Isolated synthetic scenarios] --&gt; D
+</code></pre>
+<ol>
+<li>Open a security alert and inspect its matching identity and raw evidence.</li>
+<li>Select <strong>Replay this evidence in Detection Lab</strong>.</li>
+<li>Change a threshold or time window, then select <strong>Run experiment</strong>.</li>
+<li>Move through events to see when the actual engine creates or updates alerts.</li>
+<li>Return to the alert and save an observation, hypothesis and next step.</li>
+<li>Open <strong>Case Notes</strong> to inspect or download the saved snapshot.</li>
+</ol>
+<p>The lab never changes stored events, alerts, statuses, or rule settings. The settings dialog still changes the workspace and reanalyzes its complete dataset.</p>
+<h2 id="five-isolated-experiments">Five isolated experiments</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Experiment</th>
+<th>Default result</th>
+<th>What it demonstrates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A login after failures</td>
+<td>Two alerts</td>
+<td>Five password failures trigger the failure rule; a later success triggers the sequence rule. Neither result proves compromise.</td>
+</tr>
+<tr>
+<td>One second changes the result</td>
+<td>One alert</td>
+<td>Five failures span exactly 300 seconds. A 300-second window includes the first failure; 299 seconds excludes it.</td>
+</tr>
+<tr>
+<td>Many accounts, no single match</td>
+<td>No alerts</td>
+<td>Each failure targets another user. Per-account grouping cannot detect cross-account spraying.</td>
+</tr>
+<tr>
+<td>Failures that do not count</td>
+<td>No alerts</td>
+<td>Public-key failures are excluded from password-guessing rules.</td>
+</tr>
+<tr>
+<td>Same account, different session type</td>
+<td>No alerts</td>
+<td>Type 10 failures and a type 3 success have different Windows identities.</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are generated synthetic records, parsed by the production parsers. They are never imported by the lab. Objectives, optional hints and explanations are available beside the replay. There are no invented completion scores or personal learning claims.</p>
+<h2 id="replay-contract">Replay contract</h2>
+<p><a href="../_source/logsentinel/lab.py.html">lab.py</a> sorts evidence by normalized UTC timestamp and event ID. For every prefix, it calls the same <a href="../_source/logsentinel/detection.py.html">detect function</a> used for imported logs. The browser renders returned results; it does not implement another correlation engine.</p>
+<p>The comparison uses workspace settings and experiment settings on the <strong>same selected evidence</strong>. Its counts do not describe the complete workspace unless that evidence happens to contain all records. It does not estimate precision, recall or false-positive rates.</p>
+<p>An alert replay includes only that alert's current evidence IDs. Other identities, preceding successes and surrounding events are excluded. This subset can generate a different collection of alerts from a full workspace replay. Both results are valid only within their displayed scope.</p>
+<p>Replay supports at most <strong>200 evidence records</strong>. Larger alerts return an explicit error; the API does not silently sample. Prefix replay costs more than one detection pass, so this bound keeps experiments small.</p>
+<p>Equal timestamps never establish strict temporal precedence. Public-key failures, sudo summaries and incomplete identities remain ineligible under the same production policy.</p>
+<h2 id="manual-case-notes">Manual Case Notes</h2>
+<p>Notes contain an assessment, observation, hypothesis and next step. Assessments are <strong>undetermined</strong>, <strong>likely benign</strong>, or <strong>suspicious</strong>. They are manual judgments, not detector verdicts.</p>
+<p>Saving records the alert body, all evidence IDs, and up to <strong>200 raw evidence records</strong>. Larger alerts retain the first 199 records and the final record, preserving the closing success when present. Larger snapshots explicitly report the omitted raw-record count. The saved timestamp is the note-save time; event timestamps remain log time.</p>
+<p>A separate SQLite table retains notes when rule reanalysis removes an alert. Each save replaces that alert's previous note and snapshot. The application provides no revision history, audit trail, authorship verification or multi-user conflict resolution. Saved notes do not automatically restore the live alert's workflow status.</p>
+<p>JSON downloads contain raw logs and notes. Keep them private. Existing installations gain the table at startup with <code>CREATE TABLE IF NOT EXISTS</code>; event IDs, stored events and configuration are not rewritten.</p>
+<h2 id="honest-dataset-context">Honest dataset context</h2>
+<p><a href="../_source/logsentinel/provenance.py.html">provenance.py</a> compares normalized event IDs against the bundled synthetic demo. Dashboard, event details, alert details and notes show exact matches as <strong>bundled synthetic matches</strong>. Other events are <strong>unverified imports</strong>.</p>
+<p>This is a content match, not authenticated provenance. Renaming a demo file does not make it real. Naming another file “bundled synthetic demo” does not make its contents demo data. A nonmatching synthetic file remains an unverified import; the application cannot determine its real-world origin.</p>
+<h2 id="standalone-experiment">Standalone experiment</h2>
+<p><a href="../_source/tools/export_learning_demo.py.html">The export tool</a> produces a single HTML file with embedded synthetic records and 280 engine-measured combinations. Its controls select precomputed results; it contains no second detection engine and makes no runtime network calls. It varies failure-only thresholds together and keeps the success threshold at three.</p>
+<pre><code class="language-sh">python tools/export_learning_demo.py /path/to/logsentinel-experiment.html
+</code></pre>
+<h2 id="api">API</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/lab</code></td>
+<td>Scenario catalog and replay limit</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/lab/replay</code></td>
+<td>Exactly one <code>scenario</code> or <code>alert_id</code>, plus a validated <code>settings</code> object</td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/api/alerts/{id}/notebook</code></td>
+<td>Replace manual notes and refresh the evidence snapshot</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/notebooks</code></td>
+<td>List saved notes, including inactive alerts</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/notebooks/{id}</code></td>
+<td>Read a saved note and snapshot</td>
+</tr>
+</tbody>
+</table></div>
+<p>Existing local request boundaries, input validation, body limits and same-origin policy also apply to the new endpoints.</p>
+<h2 id="research-and-design-decisions">Research and design decisions</h2>
+<p>Research date: <strong>October 29, 2026</strong>. Public first-party pages were inspected; no paid labs or authenticated training sessions were completed.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Observed approach</th>
+<th>Adaptation in LogEssential</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://tryhackme.com/room/loganalysiswithsiem">TryHackMe: Log Analysis with SIEM</a></td>
+<td>Investigations start from log sources and concrete questions.</td>
+<td>Start learning from an actual alert and its evidence.</td>
+</tr>
+<tr>
+<td><a href="https://academy.hackthebox.com/faq">HTB Academy FAQ</a></td>
+<td>Short explanations, reproducible examples, hands-on checkpoints.</td>
+<td>Small experiments with parameter changes and visible engine results.</td>
+</tr>
+<tr>
+<td><a href="https://letsdefend.io/blog/how-we-generate-simulated-siem-alerts">LetsDefend: simulated SIEM alerts</a></td>
+<td>Alerts, aligned log context and analyst investigation playbooks.</td>
+<td>Separate observation, hypothesis and the next evidence request.</td>
+</tr>
+<tr>
+<td><a href="https://help.cyberdefenders.org/en/articles/9978762-your-first-cyberrange-lab">CyberDefenders: first CyberRange lab</a></td>
+<td>Evidence artifacts, optional hints and walkthroughs.</td>
+<td>Preserve raw records and keep hints behind an explicit reveal.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The strongest argument against a new lab is interface complexity. LogEssential already had useful explanations and offline guides. A separate course catalog would duplicate them. The selected lab instead exposes the existing engine and can open directly from an operational alert.</p>
+<p>Gamification, AI verdicts, invented accuracy scores and achievement stories were deliberately omitted. There is no evidence supporting those claims. The technical demonstration is the reproducible connection between source records, rule output and analyst reasoning.</p>
+<p>Technical references: <a href="https://attack.mitre.org/techniques/T1110/001/">MITRE T1110.001</a>, <a href="https://attack.mitre.org/techniques/T1078/">MITRE T1078</a>, <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4625">Microsoft event 4625</a>. Event 4625 describes failed logons; it does not establish that every failure was an incorrect password.</p>
+<h2 id="next-priorities">Next priorities</h2>
+<ol>
+<li>Add a separately specified password-spraying rule with cross-account grouping and benign control datasets.</li>
+<li>Expand Windows failure-code context while preserving event-ID compatibility and raw evidence.</li>
+<li>Measure detections against reviewed, labeled datasets before publishing accuracy claims.</li>
+<li>Add import-session history and immutable case revisions if repeated investigations need traceability.</li>
+<li>Measure replay and ingestion performance before considering streaming or larger datasets.</li>
+</ol>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

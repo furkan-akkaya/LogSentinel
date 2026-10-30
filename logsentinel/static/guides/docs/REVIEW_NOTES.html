@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Follow-up to the earlier review · LogSentinel</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="follow-up-to-the-earlier-review">Follow-up to the earlier review</h1>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Follow-up to the earlier review · LogEssential</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="follow-up-to-the-earlier-review">Follow-up to the earlier review</h1>
 <p>The earlier review is evidence to verify, not an implementation specification to copy blindly. This release retains the file-based scope and does not add assessment flows.</p>
 <div class="table-scroll"><table>
 <thead>
@@ -50,4 +50,6 @@
 <p>The update preserves normalized IDs for existing valid samples. Provider validation does not add fields to event identity metadata. Stored historical records are not deleted or silently reparsed. New-import validation therefore does not certify historical records.</p>
 <p>Existing alert bodies can lack the new parameter snapshot. Their detail view uses the stored configuration, which the prior version committed atomically with alerts. This is read-only compatibility; it does not rewrite case status.</p>
 <p>The app still lacks durable case history, binary EVTX support, live collection, authentication, and production-scale validation. The release does not claim to resolve those limits.</p>
+<h2 id="follow-up--october-29-2026">Follow-up · October 29, 2026</h2>
+<p>Version 1.2 adds isolated engine replay, manual Case Notes and explicit dataset context. Earlier findings above describe v1.1; current capabilities and remaining limits are recorded in <a href="LEARNING_WORKSPACE.html">the learning workspace</a> and <a href="VALIDATION_V1_2.html">v1.2 validation</a>.</p>
 </main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

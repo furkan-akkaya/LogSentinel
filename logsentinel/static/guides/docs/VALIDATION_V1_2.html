@@ -1,0 +1,89 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Executed validation · v1.2.0 · LogEssential</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="executed-validation--v120">Executed validation · v1.2.0</h1>
+<p>Validation date: <strong>October 29, 2026</strong>. <a href="VALIDATION.html">Earlier v1.1 validation</a> is retained as a historical record. No remote CI or actual Windows execution is claimed.</p>
+<h2 id="baseline-and-compatibility">Baseline and compatibility</h2>
+<p>The initial v1.1 suite passed <strong>117 tests</strong> on the existing macOS Python 3.11 environment. Its demo produced 85 events and five alerts. Before regenerating the example snapshot, all old fields were compared exactly: alerts, evidence, identifiers and parameters were unchanged. Only additive dataset labels were accepted into the snapshot.</p>
+<p>The new schema adds a separate notes table. No event reparse or identifier migration is required. Dataset labels are computed, not written into existing rows.</p>
+<h2 id="executed-results">Executed results</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macOS Python 3.11</td>
+<td>138 tests passed</td>
+</tr>
+<tr>
+<td>macOS Python 3.13</td>
+<td>138 tests passed</td>
+</tr>
+<tr>
+<td>Real Docker Compose lifecycle</td>
+<td>Passed: build, isolated lab, restart, recreation, data/status/note persistence</td>
+</tr>
+<tr>
+<td>Original example verification</td>
+<td>Passed: 85 events, five alerts, 27 evidence records</td>
+</tr>
+<tr>
+<td>JavaScript syntax</td>
+<td>Passed for application scripts</td>
+</tr>
+<tr>
+<td>Targeted desktop browser flows</td>
+<td>Passed for isolated lab, alert replay, notes, JSON export and mobile widths</td>
+</tr>
+<tr>
+<td>Standalone HTML</td>
+<td>280 engine-measured combinations; 299/300-second interaction verified in a browser</td>
+</tr>
+</tbody>
+</table></div>
+<p>The 21 new test cases are included in 138, not additional to it. Test count is not a security score. The full earlier Playwright script and remote GitHub CI were not executed in this update.</p>
+<h2 id="checks-added-in-this-update">Checks added in this update</h2>
+<p>The new <a href="../_source/tests/test_lab_notebooks.py.html">lab and notes tests</a> cover:</p>
+<ol>
+<li>Every synthetic scenario and every replay prefix against the production engine.</li>
+<li>Inclusive 300-second boundaries, changed thresholds and excluded public-key records.</li>
+<li>Windows domain/logon-type grouping and account separation.</li>
+<li>Lab isolation from events, settings, alerts, statuses and notes.</li>
+<li>Input validation, ambiguous datasets, unknown scenarios and missing alerts.</li>
+<li>Explicit replay refusal above 200 evidence records.</li>
+<li>Note persistence after alert removal and process restart.</li>
+<li>Note replacement without changing alert status or settings.</li>
+<li>A 250-record alert: 200 raw snapshot records, 50 explicitly omitted records, all 250 IDs retained.</li>
+<li>Existing-database startup migration without changing events or configuration.</li>
+<li>Content-based demo labels independent of upload filename.</li>
+<li>Local origin boundaries and literal storage of hostile-looking note text.</li>
+</ol>
+<h2 id="browser-checks">Browser checks</h2>
+<p>A separate Uvicorn service on loopback port 8766 uses a disposable test database. The working service on 8765 is excluded from browser mutations.</p>
+<p>The actual app was inspected through the desktop browser tools:</p>
+<ul>
+<li>Existing dashboard, five alert explanations and raw evidence were inspected before changes.</li>
+<li>New lab parameters changed the boundary result from one alert at 300 seconds to zero at 299 seconds.</li>
+<li>Event steps expose original raw records and actual engine results.</li>
+<li>An alert opened manual notes; observation, hypothesis and next step were saved and reopened through Case Notes.</li>
+<li>JSON snapshot download completed and contains all three notes and five raw evidence records.</li>
+<li>Raw event inspection returned to its original alert; that alert opened its five-record evidence replay.</li>
+<li>Browser error logs were empty during the checked workflows.</li>
+<li>The standalone HTML produced zero alerts at 299 seconds and one at 300 seconds.</li>
+<li>Escape closed the native detail dialog.</li>
+<li>At 390px width, the page width and body width were both 390px. The notes dialog's content and client widths were both 354px.</li>
+<li>Screenshots were taken from synthetic test data.</li>
+</ul>
+<p>This is targeted browser validation. The previous Playwright browser script remains available but was not rerun through this session's browser tools. A full screen-reader or WCAG audit is not claimed.</p>
+<h2 id="reproduce">Reproduce</h2>
+<pre><code class="language-sh">python -m pip install -e '.[test,docs]'
+python tools/build_guides.py
+python -m pytest
+python tools/verify_examples.py
+python tests/docker_smoke.py
+</code></pre>
+<p>The Compose test uses its own random project, loopback port and volume. It checks health version, guides, demo, isolated lab results, non-root operation and note persistence across restart and recreation. It only removes its own test resources.</p>
+<h2 id="remaining-limits">Remaining limits</h2>
+<p>Replay is evidence-only and limited to 200 records. It is not a full-dataset settings preview or a precision/recall benchmark. Notes are mutable snapshots, not an audit trail. Other imports remain unverified. The application still has no authentication, binary EVTX support, live collection, encryption at rest, or production throughput validation.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

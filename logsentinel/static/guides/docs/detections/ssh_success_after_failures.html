@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SSH success after failures · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="ssh-success-after-failures">SSH success after failures</h1>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SSH success after failures · LogEssential</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="ssh-success-after-failures">SSH success after failures</h1>
 <p><a href="../INDEX.html">Project guide</a> · <a href="../learning/HOW_IT_WORKS.html">How it works</a></p>
 <h2 id="observed-behavior">Observed behavior</h2>
 <p>A successful SSH authentication follows several failures with the same host, IP, and account. I correlate the sequence to make a successful login visible for review. I do not label it a confirmed takeover.</p>
@@ -139,7 +139,7 @@
 <li>Review session activity in separately collected host logs.</li>
 <li>Record the remaining uncertainty before taking account or host action.</li>
 </ol>
-<p>LogSentinel automatically parses, deduplicates, correlates, and links evidence. It does not contact users, query account state, collect session commands, or perform containment.</p>
+<p>LogEssential automatically parses, deduplicates, correlates, and links evidence. It does not contact users, query account state, collect session commands, or perform containment.</p>
 <h2 id="attck-interpretation">ATT&amp;CK interpretation</h2>
 <p>T1110.001 describes the possible guessing phase. T1078 describes the possible misuse of a valid account. A successful authentication does not establish that misuse occurred. See <a href="https://attack.mitre.org/techniques/T1110/001/">T1110.001</a> and <a href="https://attack.mitre.org/techniques/T1078/">T1078</a>. The mapping describes a behavior to investigate.</p>
 <h2 id="reproduce-without-touching-your-working-database">Reproduce without touching your working database</h2>

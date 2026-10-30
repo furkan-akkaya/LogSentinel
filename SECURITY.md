@@ -1,6 +1,6 @@
 # Security model
 
-LogSentinel is a single-user, local file-analysis tool. It has **no authentication or authorization**. Run it on a trusted workstation and keep the listening port bound to loopback. It is not suitable for a shared server, LAN service, or public deployment.
+LogEssential is a single-user, local file-analysis tool. It has **no authentication or authorization**. Run it on a trusted workstation and keep the listening port bound to loopback. It is not suitable for a shared server, LAN service, or public deployment.
 
 ## Defaults
 

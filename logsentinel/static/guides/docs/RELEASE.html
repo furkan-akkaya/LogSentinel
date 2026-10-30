@@ -1,29 +1,56 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Release preparation · LogSentinel</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="release-preparation">Release preparation</h1>
-<p>Version 1.1.0 is prepared as a local source repository. No remote repository, push, tag or GitHub release was created during development. The original v1.0.0 ZIP is preserved.</p>
-<p>Included release assets:</p>
-<ul>
-<li>Runnable FastAPI application and static UI.</li>
-<li>Dockerfile, Compose service, pinned runtime requirements and native instructions.</li>
-<li>Synthetic Linux/Windows samples, including equivalent XML and JSON exports.</li>
-<li>Automated tests and a GitHub Actions workflow.</li>
-<li>MIT license, contribution guide, security model and real browser screenshots.</li>
-<li>English portfolio description in the README.</li>
-<li>Offline project guides, five engine-verified scenarios, a synthetic SSH case study, and Turkish presentation text.</li>
-</ul>
-<p>Before publishing your own copy:</p>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LogEssential 1.2.0b1 release · LogEssential</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="logessential-120b1-release">LogEssential 1.2.0b1 release</h1>
+<p>LogEssential is the visible product name; it was previously called LogSentinel.
+The <code>logsentinel</code> package, <code>LOGSENTINEL_DB</code>, Compose service, data path and GitHub repository keep their existing names.
+This beta distributes source and local-use packages. It does not deploy a public service.</p>
+<pre><code class="language-mermaid">flowchart LR
+ A[Reviewed source] --&gt; B[Tests, examples, browser, Docker]
+ B --&gt; C[Clean wheel and source archive]
+ C --&gt; D[Final commit CI]
+ D --&gt; E[Tag and draft pre-release]
+ E --&gt; F[Download assets; verify checksums and clean install]
+ F --&gt; G[Public source and beta release]
+</code></pre>
+<h2 id="contents-and-limits">Contents and limits</h2>
+<p>Detection Lab replays synthetic scenarios or at most 200 saved evidence records using the production engine.
+It never changes workspace events, settings, alerts, statuses or notes.
+Case Notes retain observations, hypotheses and next steps with bounded evidence snapshots.
+Each save replaces the previous snapshot; notes are mutable and provide no immutable audit history.
+Dataset context recognizes exact normalized demo matches; other imports remain unverified.</p>
+<p>The service remains local and single-user, without authentication or authorization.
+SQLite stores records and notes in plaintext. Protect the database and Docker volume.
+There is no live collection, agent, binary EVTX import or production throughput guarantee.
+Bind published Docker ports to <code>127.0.0.1</code>; do not add a public reverse proxy.</p>
+<h2 id="reproduce-before-tagging">Reproduce before tagging</h2>
 <ol>
-<li>Review the files and license attribution.</li>
-<li>Keep only synthetic logs in the repository.</li>
-<li>Run the commands in <code>docs/VALIDATION.md</code> on your target environment.</li>
-<li>Create a GitHub repository and connect it to your local checkout.</li>
-<li>Commit the reviewed source, push it, and inspect the configured CI results.</li>
-<li>Add a <code>v1.1.0</code> release only after those checks pass.</li>
+<li>Install <code>requirements.txt</code> and <code>.[test,browser,docs]</code> in a clean environment.</li>
+<li>Run <code>python tools/build_guides.py</code> after editing guide inputs.</li>
+<li>Run <code>python -m pytest</code> and <code>python tools/verify_examples.py</code>.</li>
+<li>Run <code>python -m playwright install chromium</code> and <code>python tests/browser_smoke.py</code>.</li>
+<li>Run <code>python tests/docker_smoke.py</code> against an available Docker daemon.</li>
+<li>Build with <code>python -m build</code>; inspect both archives and install the wheel outside the checkout.</li>
+<li>Run <code>python -I tools/release_smoke.py 1.2.0b1</code> with the clean environment's interpreter.</li>
+<li>Audit the complete locked runtime requirements with current advisory data.</li>
+<li>Push and require all checks on the exact final commit.</li>
+<li>Tag <code>v1.2.0b1</code>; the release workflow creates a draft pre-release.</li>
+<li>Download the actual assets and verify <code>SHA256SUMS</code> and a clean wheel install.</li>
+<li>Publish the verified beta and confirm anonymous repository/asset access.</li>
 </ol>
-<p>For a fresh clone, generated guides are already included. After editing documentation or linked sources, install <code>.[docs]</code> and run <code>python tools/build_guides.py</code> before tests. Keep the checksum alongside the ZIP you distribute.</p>
-<p>Suggested repository description:</p>
-<blockquote>
-<p>Local mini SIEM for Linux and Windows authentication logs, with five explainable detection rules, SQLite persistence, and Docker Compose deployment.</p>
-</blockquote>
-<p>Suggested topics: <code>cybersecurity</code>, <code>siem</code>, <code>soc</code>, <code>log-analysis</code>, <code>fastapi</code>, <code>sqlite</code>, <code>mitre-attack</code>, <code>python</code>.</p>
-<p>Use the actual screenshots under <code>docs/screenshots/</code> for the project page. Describe the app as a file-based portfolio project with automated correlation tests. Avoid claims about enterprise scale, production detection coverage, or verified account compromise.</p>
+<h2 id="upgrade-and-rollback">Upgrade and rollback</h2>
+<ol>
+<li>Stop the local service before copying its database.</li>
+<li>With Docker, run <code>docker compose down</code> without <code>-v</code> to retain the named volume.</li>
+<li>Back up that volume or the native database, including a checkpointed SQLite copy.</li>
+<li>Install the verified wheel using its accompanying requirements as constraints, or rebuild with <code>docker compose up -d --build</code>.</li>
+<li>Confirm health version <code>1.2.0b1</code>, existing event counts, settings, alert statuses and saved notes.</li>
+</ol>
+<p>Startup adds the <code>notebooks</code> table without changing existing event identities or reparsing records.
+An actual v1.1.0-to-beta Docker upgrade preserved 85 synthetic events, settings and a saved alert status.
+A new note survived the upgraded container's restart.</p>
+<p>For rollback, stop the service and restore the matching pre-upgrade database backup with the previous code/image.
+Keep a separate post-upgrade backup if newer notes must be retained.
+Never run <code>docker compose down -v</code> on the user's working project as an upgrade step.</p>
+<h2 id="publication-evidence">Publication evidence</h2>
+<p>See <a href="VALIDATION_PUBLIC_BETA.html">30 October validation</a> for local checks and their limits.
+The exact final commit's CI and tag workflow are available under the repository's Actions tab.
+The beta release carries the matching wheel, source archive, locked requirements, SBOM and SHA-256 checksums.</p>
 </main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Windows repeated logon failures · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="windows-repeated-logon-failures">Windows repeated logon failures</h1>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Windows repeated logon failures · LogEssential</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="windows-repeated-logon-failures">Windows repeated logon failures</h1>
 <p><a href="../INDEX.html">Project guide</a> · <a href="../learning/HOW_IT_WORKS.html">How it works</a></p>
 <h2 id="observed-behavior">Observed behavior</h2>
 <p>Windows 4625 indicates a failed logon. This rule counts repeated failures within one authentication context. The cause may be a bad credential, account state, or a logon restriction.</p>
@@ -163,7 +163,7 @@
 <li>Check account state, expected logon type, and service configuration.</li>
 <li>Record the remaining uncertainty before taking account or host action.</li>
 </ol>
-<p>LogSentinel automatically parses, deduplicates, correlates, and links evidence. It does not contact users, query account state, collect session commands, or perform containment.</p>
+<p>LogEssential automatically parses, deduplicates, correlates, and links evidence. It does not contact users, query account state, collect session commands, or perform containment.</p>
 <h2 id="attck-interpretation">ATT&amp;CK interpretation</h2>
 <p>T1110.001 is a hypothesis for repeated authentication attempts. The rule cannot infer password guessing from EventID alone. Status and SubStatus can help an analyst test that hypothesis. See <a href="https://attack.mitre.org/techniques/T1110/001/">T1110.001</a> and the broader <a href="https://attack.mitre.org/techniques/T1110/001/">ATT&amp;CK technique context</a>. The mapping describes a behavior to investigate.</p>
 <h2 id="reproduce-without-touching-your-working-database">Reproduce without touching your working database</h2>

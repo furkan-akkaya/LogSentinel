@@ -1,13 +1,13 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio presentation · LogSentinel</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="portfolio-presentation">Portfolio presentation</h1>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio presentation · LogEssential</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="portfolio-presentation">Portfolio presentation</h1>
 <h2 id="short-english-description">Short English description</h2>
-<p>LogSentinel is a local mini SIEM for Linux and Windows authentication logs. It normalizes records into SQLite and applies five configurable event-time rules. Each alert includes its matching identity, thresholds, and source evidence. The bundled demo produces 85 events and five explainable alerts without a lab server.</p>
+<p>LogEssential is a local mini SIEM for Linux and Windows authentication logs. It normalizes records into SQLite and applies five configurable event-time rules. Each alert includes its matching identity, thresholds, and source evidence. The bundled demo produces 85 events and five explainable alerts without a lab server.</p>
 <h2 id="technical-decisions-to-show">Technical decisions to show</h2>
 <p>I used a shared UTC event model so exports with different time representations can be compared. Correlation keys keep different accounts, hosts, and authentication contexts separate.</p>
 <p>I used one FastAPI service and SQLite to keep setup small. Event insertion and alert replay share a transaction. A failed import cannot leave half-updated detection results.</p>
 <p>The <a href="learning/HOW_IT_WORKS.html">walkthrough</a>, <a href="INDEX.html">five scenarios</a>, and <a href="reports/SSH_CASE_STUDY.html">synthetic case report</a> connect these choices to actual engine output. The <a href="VALIDATION.html">validation record</a> states which checks ran.</p>
 <p>These statements describe the implementation. They do not assert independent authorship, professional experience, personal learning progress, or production use.</p>
 <h2 id="kısa-türkçe-sunum-anlatısı">Kısa Türkçe sunum anlatısı</h2>
-<p>LogSentinel, Linux ve Windows kimlik doğrulama kayıtlarını inceleyen yerel bir güvenlik analiz projesidir. Amaç, şüpheli giriş örüntülerini kaynak kayıtlarla açıklamaktır.</p>
+<p>LogEssential, Linux ve Windows kimlik doğrulama kayıtlarını inceleyen yerel bir güvenlik analiz projesidir. Amaç, şüpheli giriş örüntülerini kaynak kayıtlarla açıklamaktır.</p>
 <p>Uygulama dosyayı okur, olayları ortak şemaya dönüştürür ve SQLite içinde saklar. Beş kural, olay zamanını ve kimlik alanlarını kullanarak uyarı üretir. Kullanıcı her uyarının kanıtlarını arayüzden inceleyebilir.</p>
 <p>İlk tasarım kararı, zamanı UTC olarak saklamaktır. Bu karar, farklı saat farklarıyla gelen kayıtları aynı zaman çizelgesinde karşılaştırmayı sağlar.</p>
 <p>İkinci karar, korelasyonda makine, kullanıcı ve kaynak bağlamını birlikte kullanmaktır. Bu karar, ilgisiz girişlerin aynı saldırı dizisine katılmasını azaltır. Ancak parola püskürtme ve dağıtılmış denemeler farklı gruplarda kalabilir.</p>
@@ -21,4 +21,13 @@
 <li>Show the tested Windows source-validation rule and its compatibility limit.</li>
 </ol>
 <p>Use only synthetic screenshots and samples. The local app has no authentication; do not expose it publicly as a portfolio service. Publish reviewed source and screenshots through your own normal publishing process.</p>
+<h2 id="demonstrate-v12-without-inventing-a-learning-story">Demonstrate v1.2 without inventing a learning story</h2>
+<ol>
+<li>Open an alert and show its actual raw records.</li>
+<li>Replay that evidence in Detection Lab and change one parameter.</li>
+<li>Compare the 299-second and 300-second boundary experiment.</li>
+<li>Explain why the cross-account scenario produces no alerts.</li>
+<li>Save an observation, hypothesis and next evidence request in Case Notes.</li>
+</ol>
+<p>These behaviors demonstrate parsing, event-time correlation, rule testing, evidence handling, transaction design and analyst reasoning. They do not establish course completion, independent authorship, professional SOC experience, or production detection accuracy.</p>
 </main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

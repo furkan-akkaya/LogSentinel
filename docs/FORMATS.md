@@ -61,7 +61,7 @@ $xml = '<Events>' + (($events | ForEach-Object { $_.ToXml() }) -join "`n") + '</
 [System.IO.File]::WriteAllText((Join-Path $PWD 'security.xml'), $xml, [System.Text.UTF8Encoding]::new($false))
 ```
 
-This is an export command for your Windows machine, not host access requested by LogSentinel. The command is documented, not executed or validated on Windows during this development session. Do not upload a binary `.evtx` file. XML raw records are preserved as a semantic XML serialization with possible namespace-prefix changes, rather than original byte slices.
+This is an export command for your Windows machine, not host access requested by LogEssential. The command is documented, not executed or validated on Windows during this development session. Do not upload a binary `.evtx` file. XML raw records are preserved as a semantic XML serialization with possible namespace-prefix changes, rather than original byte slices.
 
 Field meanings follow [Microsoft 4624 documentation](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4624) and [Microsoft 4625 documentation](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4625). Missing IP information is normal in some authentication contexts. The app stores these events but does not invent network identity.
 

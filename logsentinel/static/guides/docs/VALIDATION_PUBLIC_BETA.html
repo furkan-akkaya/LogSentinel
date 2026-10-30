@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Public beta validation · 30 October 2026 · LogEssential</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="public-beta-validation--30-october-2026">Public beta validation · 30 October 2026</h1>
+<p>This record supersedes current-release instructions in the historical v1.1/v1.2 validation notes.
+Historical results remain dated evidence, not proof for the final beta commit.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Executed result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python 3.13 on macOS</td>
+<td>139 tests passed, including installed/module/health/OpenAPI version agreement</td>
+</tr>
+<tr>
+<td>Real engine examples</td>
+<td>85 events, 5 alerts, 27 evidence records; repeat import inserts 0</td>
+</tr>
+<tr>
+<td>Detection rules</td>
+<td>Existing tests cover five rules, inclusive time boundaries and identity separation</td>
+</tr>
+<tr>
+<td>Detection Lab</td>
+<td>Production-engine replay, 299/300-second boundary, all scenario prefixes and workspace isolation</td>
+</tr>
+<tr>
+<td>Browser</td>
+<td>Chromium: current lab, saved/reopened notes, raw record return, JSON export, original workflows, mobile, stored-XSS check and outage/retry</td>
+</tr>
+<tr>
+<td>Browser requests/errors</td>
+<td>No unexpected external requests or JavaScript errors during checked flows</td>
+</tr>
+<tr>
+<td>Docker Compose</td>
+<td>Build, loopback bind, non-root, isolated lab, events/status/notes retained after restart and recreation</td>
+</tr>
+<tr>
+<td>Actual old-image upgrade</td>
+<td>v1.1.0 image → 1.2.0b1 image on the same isolated named volume; 85 events, settings, status and dedup preserved; new note survived restart</td>
+</tr>
+<tr>
+<td>Runtime audit</td>
+<td>Complete pinned runtime set checked against current pip-audit advisories; no known vulnerabilities reported</td>
+</tr>
+</tbody>
+</table></div>
+<p>The earlier package module still reported 1.1.0 while health reported 1.2.0.
+The beta fixes that discrepancy using one <code>__version__</code> source for API metadata.
+A stale guide assertion in the Docker smoke test was updated with the visible product name.
+Guide manifest checks intentionally fail until generated files match current sources.</p>
+<p>The Windows parser tests use supported XML/JSON fixtures; no Windows host execution is claimed.
+Docker tests use disposable projects, databases and volumes and remove only those resources.
+No real user records were imported for these checks.
+No full accessibility audit, penetration test, enterprise throughput test or production precision/recall measurement is claimed.</p>
+<p>Clean release-asset installation, final-commit CI and draft checks must pass before publication.
+Their exact commit IDs, run URLs and asset digests belong in the publication report and release metadata.</p>
+</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

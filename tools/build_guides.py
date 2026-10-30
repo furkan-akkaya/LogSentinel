@@ -16,6 +16,7 @@ DEST = ROOT / "logsentinel" / "static" / "guides"
 DOCUMENTS = [
     ROOT / "README.md",
     ROOT / "SECURITY.md",
+    ROOT / "CHANGELOG.md",
     *sorted((ROOT / "docs").rglob("*.md")),
 ]
 
@@ -23,7 +24,7 @@ DOCUMENTS = [
 def shell(title, body, output):
     css = os.path.relpath(ROOT / "logsentinel" / "static" / "guide.css", output.parent)
     index = os.path.relpath(DEST / "docs" / "INDEX.html", output.parent)
-    return f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{escape(title)} · LogSentinel</title><link rel="stylesheet" href="{css}"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="{index}">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1">{body}</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>\n'
+    return f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{escape(title)} · LogEssential</title><link rel="stylesheet" href="{css}"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="{index}">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1">{body}</main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>\n'
 
 
 def build():

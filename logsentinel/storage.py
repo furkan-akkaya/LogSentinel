@@ -7,6 +7,7 @@ from pathlib import Path
 import sqlite3
 
 from .detection import DEFAULTS, detect
+from .provenance import dataset_kind
 
 MAX_EVENTS = 50_000
 
@@ -44,6 +45,9 @@ def initialize(path):
           id TEXT PRIMARY KEY, body TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'new'
         );
         CREATE TABLE IF NOT EXISTS config (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS notebooks (
+          alert_id TEXT PRIMARY KEY, body TEXT NOT NULL
+        );
         """)
         db.execute(
             "INSERT OR IGNORE INTO config VALUES (1, ?)", (json.dumps(DEFAULTS),)
@@ -53,6 +57,7 @@ def initialize(path):
 def event_dict(row):
     value = dict(row)
     value["metadata"] = json.loads(value["metadata"])
+    value["dataset_kind"] = dataset_kind(value["id"])
     return value
 
 

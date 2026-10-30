@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "logsentinel"
-version = "1.1.0"
+version = "1.2.0b1"
 description = "A local mini SIEM for Linux and Windows authentication logs"
 readme = "README.md"
 requires-python = ">=3.11"

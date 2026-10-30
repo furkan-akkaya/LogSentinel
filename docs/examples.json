@@ -46,7 +46,8 @@
             "method": "password",
             "source_port": "51000"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "651d4536d32fdae863c2344a72361256f50b9bcb1a03e5390997e42cd05571b6",
@@ -62,7 +63,8 @@
             "method": "password",
             "source_port": "51001"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "cd9823eff5f1cd799497ac3c9a8f344986090ff81d2775affdbd5378988af5a5",
@@ -78,7 +80,8 @@
             "method": "password",
             "source_port": "51002"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "411bdfa2f0c96a06a7a3978029f46301b5116fcde172b3b8c1b344de0d3277aa",
@@ -94,7 +97,8 @@
             "method": "password",
             "source_port": "51003"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "4de637a8bb806f20c4a2486b2004ec613cc4f4178d0bb414f4a81fafe1d9b9e5",
@@ -110,7 +114,8 @@
             "method": "password",
             "source_port": "51004"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "864be6cd3f70e506fa7d42ca9830bce425b8e34d1fc475077bb2e06d0321cb81",
@@ -126,7 +131,8 @@
             "method": "password",
             "source_port": "51005"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "2fa09dd6d43f991fb26663dd8d1dd09e04871580392e4e73aa9e82ae999072eb",
@@ -142,7 +148,8 @@
             "method": "password",
             "source_port": "51006"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         }
       ]
     },
@@ -182,7 +189,8 @@
             "method": "password",
             "source_port": "52000"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "8e1c7e7e3d38008222873f58464946790c16da3a4224094725d7360f04889e65",
@@ -198,7 +206,8 @@
             "method": "password",
             "source_port": "52001"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "845d9ffa43464040f9069fcb0571a1f1ac2aee8cecca6cc6668ea10ea4cef0c1",
@@ -214,7 +223,8 @@
             "method": "password",
             "source_port": "52002"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "d0d9e69b1272117e5e8c3b8ec2ee2234b93c0bf4220052e3dcc0f472507f8944",
@@ -230,7 +240,8 @@
             "method": "password",
             "source_port": "52003"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "776fd8b704262268c66efe33c0a66ac7843676fc2eefe28efe5a500d23ccf5c7",
@@ -246,7 +257,8 @@
             "method": "password",
             "source_port": "52010"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         }
       ]
     },
@@ -286,7 +298,8 @@
             "target_user": "root",
             "tty": "/dev/pts/1"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "807f116a1a93ba8be045f0e8f60ccc145f24eefc0a1f8530f29ca616a5397cad",
@@ -302,7 +315,8 @@
             "target_user": "root",
             "tty": "/dev/pts/1"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "a72bd9a96b5e5623dba69d810ed0f7b19db81416362978c8758767ce2ca1dbe9",
@@ -318,7 +332,8 @@
             "target_user": "root",
             "tty": "/dev/pts/1"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "ff08baf0759161382abb1149727a8cb144328355701b5814f76bd2543853e78b",
@@ -334,7 +349,8 @@
             "target_user": "root",
             "tty": "/dev/pts/1"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         }
       ]
     },
@@ -378,7 +394,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "9dda10f2d678e3f0accda8052ac36916e6c887a1b025ea5492e4f8afd9f38275",
@@ -396,7 +413,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "39466f9b3ef91299d6abfb5290a0022624e93727e8bc3ac022dc9b64e8a03f07",
@@ -414,7 +432,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "583a66928f3cd1cea97a6db1c95fbef0ee6008df8348a8a6d87aadcf2c4c658a",
@@ -432,7 +451,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "5cb8ab31075f7409123bbea7982df1652f3a86688a2d20367645ae6eb3cd62fa",
@@ -450,7 +470,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "b1da7d7db3615b8b11c266eb64ff3d0864d3b25ddaaa042f7a2a55ee605d74ac",
@@ -468,7 +489,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         }
       ]
     },
@@ -512,7 +534,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "ce6faafeb2166032f13f35580e26cc0dee50ef8908797d8e6ff16075421a20f1",
@@ -530,7 +553,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "77e98e5d87290efc1458ad2cff494fa656f5fb5022ffc824bc1d5c3d5adda83c",
@@ -548,7 +572,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "794f5ccea4d45be0ff2a65b96ebb81c90119a0d83ed049b0df2bc0f8046bbf83",
@@ -566,7 +591,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         },
         {
           "id": "a2724be1c2591a246132868706baeae45f1ffc4c3f9e2800d56fd367d06f5f25",
@@ -584,7 +610,8 @@
             "domain": "LAB",
             "logon_type": "10"
           },
-          "filename": "bundled synthetic demo"
+          "filename": "bundled synthetic demo",
+          "dataset_kind": "bundled_synthetic_match"
         }
       ]
     }

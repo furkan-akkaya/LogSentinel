@@ -14,13 +14,17 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .detection import RULES, correlation_key
+from . import __version__
+from .detection import RULES, correlation_key, detect
 from .guidance import explain_alert
+from .lab import MAX_REPLAY_EVENTS, SCENARIOS, replay, scenario_events
 from .parsers import parse, timestamp
+from .provenance import dataset_summary
 from .storage import connection, event_dict, ingest, initialize, reanalyze, settings
 
 ROOT = Path(__file__).parent
 MAX_UPLOAD = 5 * 1024 * 1024
+MAX_NOTE_EVIDENCE = 200
 
 
 class LocalBoundary:
@@ -90,6 +94,21 @@ class AlertStatus(BaseModel):
     status: Literal["new", "investigating", "resolved"]
 
 
+class ReplayRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    scenario: str | None = Field(default=None, max_length=80)
+    alert_id: str | None = Field(default=None, max_length=64)
+    settings: RuleSettings
+
+
+class AnalystNote(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    assessment: Literal["undetermined", "likely_benign", "suspicious"] = "undetermined"
+    observation: str = Field(default="", max_length=4000)
+    hypothesis: str = Field(default="", max_length=4000)
+    next_step: str = Field(default="", max_length=4000)
+
+
 def create_app(db_path=None):
     path = str(db_path or os.getenv("LOGSENTINEL_DB", "data/logsentinel.db"))
 
@@ -99,8 +118,8 @@ def create_app(db_path=None):
         yield
 
     app = FastAPI(
-        title="LogSentinel",
-        version="1.1.0",
+        title="LogEssential",
+        version=__version__,
         lifespan=lifespan,
         docs_url=None,
         redoc_url=None,
@@ -141,7 +160,7 @@ def create_app(db_path=None):
     def health():
         with connection(path) as db:
             db.execute("SELECT count(*) FROM events").fetchone()
-        return {"status": "ok", "version": "1.1.0"}
+        return {"status": "ok", "version": __version__}
 
     @app.post("/api/import")
     def import_logs(
@@ -318,7 +337,141 @@ def create_app(db_path=None):
                 for eid in item["evidence"]
             ]
             item["explanation"] = explain_alert(item, item["events"], settings(db))
+            item["dataset"] = dataset_summary(item["events"])
+            note = db.execute(
+                "SELECT body FROM notebooks WHERE alert_id=?", (identifier,)
+            ).fetchone()
+            item["notebook"] = json.loads(note["body"]) if note else None
             return item
+
+    @app.get("/api/lab")
+    def lab_catalog():
+        return {"scenarios": SCENARIOS, "max_evidence_records": MAX_REPLAY_EVENTS}
+
+    @app.post("/api/lab/replay")
+    def lab_replay(value: ReplayRequest):
+        if bool(value.scenario) == bool(value.alert_id):
+            raise HTTPException(422, "Choose exactly one scenario or alert_id")
+        if value.alert_id:
+            with connection(path) as db:
+                db.execute("BEGIN")
+                row = db.execute(
+                    "SELECT body FROM alerts WHERE id=?", (value.alert_id,)
+                ).fetchone()
+                if row is None:
+                    raise HTTPException(404, "Alert not found")
+                alert = json.loads(row["body"])
+                baseline = settings(db)
+                if len(alert["evidence"]) > MAX_REPLAY_EVENTS:
+                    raise HTTPException(
+                        422,
+                        f"Replay supports at most {MAX_REPLAY_EVENTS} evidence records; this alert is too large",
+                    )
+                events = [
+                    event_dict(
+                        db.execute("SELECT * FROM events WHERE id=?", (eid,)).fetchone()
+                    )
+                    for eid in alert["evidence"]
+                ]
+            scope = {
+                "kind": "alert_evidence",
+                "alert_id": value.alert_id,
+                "title": alert["title"],
+                "dataset": dataset_summary(events),
+                "limits": "Only this alert's saved evidence is replayed. Other stored events are excluded. This is not a coverage or false-positive measurement.",
+            }
+        else:
+            try:
+                events = scenario_events(value.scenario)
+            except ValueError as exc:
+                raise HTTPException(422, str(exc))
+            scope = {
+                "kind": "synthetic_scenario",
+                "scenario": value.scenario,
+                "title": next(
+                    s["title"] for s in SCENARIOS if s["id"] == value.scenario
+                ),
+                "limits": "Synthetic records in an isolated experiment. They are never imported into your workspace.",
+            }
+            with connection(path) as db:
+                baseline = settings(db)
+        return {
+            **replay(events, value.settings.model_dump()),
+            "scope": scope,
+            "baseline": {
+                "settings": baseline,
+                "alerts_total": len(detect(events, baseline)),
+            },
+        }
+
+    @app.put("/api/alerts/{identifier}/notebook")
+    def save_notebook(identifier: str, value: AnalystNote):
+        with connection(path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT * FROM alerts WHERE id=?", (identifier,)
+            ).fetchone()
+            if row is None:
+                raise HTTPException(404, "Alert not found")
+            alert = {**json.loads(row["body"]), "status": row["status"]}
+            evidence_ids = alert["evidence"]
+            snapshot_ids = (
+                evidence_ids
+                if len(evidence_ids) <= MAX_NOTE_EVIDENCE
+                else evidence_ids[: MAX_NOTE_EVIDENCE - 1] + evidence_ids[-1:]
+            )
+            events = [
+                event_dict(
+                    db.execute("SELECT * FROM events WHERE id=?", (eid,)).fetchone()
+                )
+                for eid in snapshot_ids
+            ]
+            item = {
+                "alert_id": identifier,
+                "saved_at": datetime.now(timezone.utc).isoformat(),
+                "note": value.model_dump(),
+                "alert": alert,
+                "events": events,
+                "snapshot_policy": "all"
+                if len(evidence_ids) <= MAX_NOTE_EVIDENCE
+                else "first_and_final",
+                "evidence_omitted": max(0, len(alert["evidence"]) - len(events)),
+                "scope": "Manual analyst notes and a bounded evidence snapshot. Not a verified verdict or an audit history.",
+            }
+            db.execute(
+                "INSERT INTO notebooks VALUES (?,?) ON CONFLICT(alert_id) DO UPDATE SET body=excluded.body",
+                (identifier, json.dumps(item)),
+            )
+        return item
+
+    @app.get("/api/notebooks")
+    def notebooks():
+        with connection(path) as db:
+            items = []
+            for row in db.execute(
+                "SELECT notebooks.body, alerts.id AS active_id FROM notebooks LEFT JOIN alerts ON alerts.id=notebooks.alert_id"
+            ):
+                note = json.loads(row["body"])
+                items.append(
+                    {
+                        "alert_id": note["alert_id"],
+                        "title": note["alert"]["title"],
+                        "saved_at": note["saved_at"],
+                        "assessment": note["note"]["assessment"],
+                        "active": row["active_id"] is not None,
+                    }
+                )
+        return {"items": sorted(items, key=lambda n: n["saved_at"], reverse=True)}
+
+    @app.get("/api/notebooks/{identifier}")
+    def notebook_detail(identifier: str):
+        with connection(path) as db:
+            row = db.execute(
+                "SELECT body FROM notebooks WHERE alert_id=?", (identifier,)
+            ).fetchone()
+            if row is None:
+                raise HTTPException(404, "Notebook not found")
+            return json.loads(row["body"])
 
     @app.patch("/api/alerts/{identifier}")
     def update_alert(identifier: str, value: AlertStatus):
@@ -333,6 +486,7 @@ def create_app(db_path=None):
     @app.get("/api/stats")
     def stats():
         with connection(path) as db:
+            db.execute("BEGIN")
             count = db.execute("SELECT count(*) FROM events").fetchone()[0]
             hosts = db.execute("SELECT count(DISTINCT host) FROM events").fetchone()[0]
             latest = db.execute("SELECT max(timestamp) FROM events").fetchone()[0]
@@ -352,6 +506,9 @@ def create_app(db_path=None):
                 correlation_key(event_dict(r)) is None
                 for r in db.execute("SELECT * FROM events")
             )
+            dataset = dataset_summary(
+                [dict(r) for r in db.execute("SELECT id FROM events")]
+            )
         severity = {
             key: sum(a["severity"] == key for a in alerts)
             for key in ("critical", "high", "medium")
@@ -362,6 +519,7 @@ def create_app(db_path=None):
             alert_timeline[hour] = alert_timeline.get(hour, 0) + 1
         return {
             "events": count,
+            "dataset": dataset,
             "alerts": len(alerts),
             "hosts": hosts,
             "latest_event": latest,

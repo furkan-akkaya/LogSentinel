@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Windows success after failures · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="windows-success-after-failures">Windows success after failures</h1>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Windows success after failures · LogEssential</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="../INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="windows-success-after-failures">Windows success after failures</h1>
 <p><a href="../INDEX.html">Project guide</a> · <a href="../learning/HOW_IT_WORKS.html">How it works</a></p>
 <h2 id="observed-behavior">Observed behavior</h2>
 <p>A 4624 session-creation event follows matching 4625 failures. I require the same domain and logon type as well as host, account, and IP. This prevents joining unrelated authentication contexts.</p>
@@ -157,7 +157,7 @@
 <li>Correlate session activity using additional host logs and confirm the login with its owner.</li>
 <li>Record the remaining uncertainty before taking account or host action.</li>
 </ol>
-<p>LogSentinel automatically parses, deduplicates, correlates, and links evidence. It does not contact users, query account state, collect session commands, or perform containment.</p>
+<p>LogEssential automatically parses, deduplicates, correlates, and links evidence. It does not contact users, query account state, collect session commands, or perform containment.</p>
 <h2 id="attck-interpretation">ATT&amp;CK interpretation</h2>
 <p>T1110.001 captures the possible failure phase. T1078 is a possible valid-account misuse interpretation after success. Both remain analyst hypotheses, not an automated verdict. See <a href="https://attack.mitre.org/techniques/T1110/001/">T1110.001</a> and <a href="https://attack.mitre.org/techniques/T1078/">T1078</a>. The mapping describes a behavior to investigate.</p>
 <h2 id="reproduce-without-touching-your-working-database">Reproduce without touching your working database</h2>

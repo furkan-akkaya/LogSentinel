@@ -21,3 +21,7 @@ The update preserves normalized IDs for existing valid samples. Provider validat
 Existing alert bodies can lack the new parameter snapshot. Their detail view uses the stored configuration, which the prior version committed atomically with alerts. This is read-only compatibility; it does not rewrite case status.
 
 The app still lacks durable case history, binary EVTX support, live collection, authentication, and production-scale validation. The release does not claim to resolve those limits.
+
+## Follow-up · October 29, 2026
+
+Version 1.2 adds isolated engine replay, manual Case Notes and explicit dataset context. Earlier findings above describe v1.1; current capabilities and remaining limits are recorded in [the learning workspace](LEARNING_WORKSPACE.md) and [v1.2 validation](VALIDATION_V1_2.md).

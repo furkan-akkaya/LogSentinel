@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>LogSentinel API</title>
+    <title>LogEssential API</title>
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
@@ -25,6 +25,11 @@
             </tr>
           </thead>
           <tbody>
+            <tr><td>GET</td><td>/api/lab</td><td>Isolated scenario catalog and replay limit</td></tr>
+            <tr><td>POST</td><td>/api/lab/replay</td><td>Exactly one scenario or alert_id, plus settings; read-only engine replay</td></tr>
+            <tr><td>PUT</td><td>/api/alerts/{id}/notebook</td><td>Save assessment, observation, hypothesis, next_step with evidence snapshot</td></tr>
+            <tr><td>GET</td><td>/api/notebooks</td><td>Saved manual investigations, including removed alerts</td></tr>
+            <tr><td>GET</td><td>/api/notebooks/{id}</td><td>Manual notes and the saved evidence snapshot</td></tr>
             <tr>
               <td>GET</td>
               <td>/api/health</td>

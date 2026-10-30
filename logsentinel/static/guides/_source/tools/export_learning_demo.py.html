@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>tools/export_learning_demo.py · LogEssential</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="../../docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1>tools/export_learning_demo.py</h1><p>Repository source snapshot packaged with this release.</p><pre class="source-code"><code><span id="L1"><a href="#L1" aria-label="Line 1">   1</a> &quot;&quot;&quot;Export a self-contained experiment with results measured by the real engine.&quot;&quot;&quot;</span>
+<span id="L2"><a href="#L2" aria-label="Line 2">   2</a> </span>
+<span id="L3"><a href="#L3" aria-label="Line 3">   3</a> import argparse</span>
+<span id="L4"><a href="#L4" aria-label="Line 4">   4</a> import json</span>
+<span id="L5"><a href="#L5" aria-label="Line 5">   5</a> from pathlib import Path</span>
+<span id="L6"><a href="#L6" aria-label="Line 6">   6</a> </span>
+<span id="L7"><a href="#L7" aria-label="Line 7">   7</a> from logsentinel.detection import DEFAULTS</span>
+<span id="L8"><a href="#L8" aria-label="Line 8">   8</a> from logsentinel.lab import SCENARIOS, replay, scenario_events</span>
+<span id="L9"><a href="#L9" aria-label="Line 9">   9</a> </span>
+<span id="L10"><a href="#L10" aria-label="Line 10">  10</a> </span>
+<span id="L11"><a href="#L11" aria-label="Line 11">  11</a> def export(output):</span>
+<span id="L12"><a href="#L12" aria-label="Line 12">  12</a>     windows = [10, 60, 120, 225, 299, 300, 301, 600]</span>
+<span id="L13"><a href="#L13" aria-label="Line 13">  13</a>     scenarios = []</span>
+<span id="L14"><a href="#L14" aria-label="Line 14">  14</a>     for scenario in SCENARIOS:</span>
+<span id="L15"><a href="#L15" aria-label="Line 15">  15</a>         events = scenario_events(scenario[&quot;id&quot;])</span>
+<span id="L16"><a href="#L16" aria-label="Line 16">  16</a>         results = {}</span>
+<span id="L17"><a href="#L17" aria-label="Line 17">  17</a>         for threshold in range(2, 9):</span>
+<span id="L18"><a href="#L18" aria-label="Line 18">  18</a>             for window in windows:</span>
+<span id="L19"><a href="#L19" aria-label="Line 19">  19</a>                 # Vary failure-only thresholds together; success threshold stays at 3.</span>
+<span id="L20"><a href="#L20" aria-label="Line 20">  20</a>                 settings = {</span>
+<span id="L21"><a href="#L21" aria-label="Line 21">  21</a>                     **DEFAULTS,</span>
+<span id="L22"><a href="#L22" aria-label="Line 22">  22</a>                     &quot;ssh_threshold&quot;: threshold,</span>
+<span id="L23"><a href="#L23" aria-label="Line 23">  23</a>                     &quot;windows_threshold&quot;: threshold,</span>
+<span id="L24"><a href="#L24" aria-label="Line 24">  24</a>                     &quot;sudo_threshold&quot;: threshold,</span>
+<span id="L25"><a href="#L25" aria-label="Line 25">  25</a>                     &quot;window_seconds&quot;: window,</span>
+<span id="L26"><a href="#L26" aria-label="Line 26">  26</a>                 }</span>
+<span id="L27"><a href="#L27" aria-label="Line 27">  27</a>                 measured = replay(events, settings)</span>
+<span id="L28"><a href="#L28" aria-label="Line 28">  28</a>                 results[f&quot;{threshold}:{window}&quot;] = [</span>
+<span id="L29"><a href="#L29" aria-label="Line 29">  29</a>                     {</span>
+<span id="L30"><a href="#L30" aria-label="Line 30">  30</a>                         &quot;count&quot;: step[&quot;alerts_total&quot;],</span>
+<span id="L31"><a href="#L31" aria-label="Line 31">  31</a>                         &quot;eligible&quot;: step[&quot;eligible&quot;],</span>
+<span id="L32"><a href="#L32" aria-label="Line 32">  32</a>                         &quot;reasons&quot;: [</span>
+<span id="L33"><a href="#L33" aria-label="Line 33">  33</a>                             a[&quot;reason&quot;] for a in step[&quot;triggered&quot;] + step[&quot;updated&quot;]</span>
+<span id="L34"><a href="#L34" aria-label="Line 34">  34</a>                         ],</span>
+<span id="L35"><a href="#L35" aria-label="Line 35">  35</a>                     }</span>
+<span id="L36"><a href="#L36" aria-label="Line 36">  36</a>                     for step in measured[&quot;steps&quot;]</span>
+<span id="L37"><a href="#L37" aria-label="Line 37">  37</a>                 ]</span>
+<span id="L38"><a href="#L38" aria-label="Line 38">  38</a>         scenarios.append({**scenario, &quot;events&quot;: events, &quot;results&quot;: results})</span>
+<span id="L39"><a href="#L39" aria-label="Line 39">  39</a>     data = json.dumps(</span>
+<span id="L40"><a href="#L40" aria-label="Line 40">  40</a>         {&quot;windows&quot;: windows, &quot;scenarios&quot;: scenarios}, ensure_ascii=False</span>
+<span id="L41"><a href="#L41" aria-label="Line 41">  41</a>     ).replace(&quot;&lt;&quot;, &quot;\\u003c&quot;)</span>
+<span id="L42"><a href="#L42" aria-label="Line 42">  42</a>     template = (Path(__file__).parent / &quot;learning_demo_template.html&quot;).read_text()</span>
+<span id="L43"><a href="#L43" aria-label="Line 43">  43</a>     output.write_text(template.replace(&quot;__MEASURED_RESULTS__&quot;, data))</span>
+<span id="L44"><a href="#L44" aria-label="Line 44">  44</a>     print(</span>
+<span id="L45"><a href="#L45" aria-label="Line 45">  45</a>         f&quot;Exported {len(scenarios) * 7 * len(windows)} measured parameter combinations to {output}&quot;</span>
+<span id="L46"><a href="#L46" aria-label="Line 46">  46</a>     )</span>
+<span id="L47"><a href="#L47" aria-label="Line 47">  47</a> </span>
+<span id="L48"><a href="#L48" aria-label="Line 48">  48</a> </span>
+<span id="L49"><a href="#L49" aria-label="Line 49">  49</a> if __name__ == &quot;__main__&quot;:</span>
+<span id="L50"><a href="#L50" aria-label="Line 50">  50</a>     parser = argparse.ArgumentParser()</span>
+<span id="L51"><a href="#L51" aria-label="Line 51">  51</a>     parser.add_argument(&quot;output&quot;, type=Path)</span>
+<span id="L52"><a href="#L52" aria-label="Line 52">  52</a>     export(parser.parse_args().output)</span></code></pre></main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

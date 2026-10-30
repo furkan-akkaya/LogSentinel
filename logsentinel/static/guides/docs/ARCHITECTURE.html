@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Technical design · LogSentinel</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="technical-design">Technical design</h1>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Technical design · LogEssential</title><link rel="stylesheet" href="../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogEssential</a><nav aria-label="Guide navigation"><a href="INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1 id="technical-design">Technical design</h1>
 <h2 id="components-and-ownership">Components and ownership</h2>
 <div class="table-scroll"><table>
 <thead>
@@ -61,4 +61,8 @@
 <p>The dataset is loaded in memory for replay, and search uses SQLite substring scans. Raw content is not indexed as full text. Run one worker and keep datasets small. Limits constrain typical use; they are not a substitute for access control against hostile local clients. No high-volume or production capacity claim is made.</p>
 <h2 id="technology-choices">Technology choices</h2>
 <p>FastAPI provides typed inputs and OpenAPI with a small Python service. SQLite avoids server dependencies and supports transactions. Static JavaScript and CSS keep installation independent of Node.js. Docker Compose packages the same application; its named volume owns the database. Python's <code>defusedxml</code> parser rejects DTD/entity expansion. The API documentation is local HTML, avoiding CDN dependencies.</p>
+<h2 id="isolated-replay-and-retained-notes--v12">Isolated replay and retained notes · v1.2</h2>
+<p>The lab module parses small synthetic scenarios and calls the existing detection engine for sorted event prefixes. Alert experiments load only the selected evidence; no lab path calls ingestion or reanalysis. A 200-record bound limits replay cost.</p>
+<p>A separate <code>notebooks</code> table stores manual notes with a bounded evidence snapshot. It has no foreign key to the transient alerts table, so reanalysis cannot remove saved reasoning. Each save replaces the previous snapshot atomically. This is a deliberate limit, not an audit trail.</p>
+<p>Event IDs and parser contracts remain unchanged. A computed dataset label compares event IDs against the bundled demo; unmatched files remain unverified. See <a href="LEARNING_WORKSPACE.html">implementation contracts</a>.</p>
 </main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

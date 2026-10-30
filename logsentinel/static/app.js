@@ -64,6 +64,10 @@ async function busy(button, work) {
 function empty(title, description, demo = false) {
   return `<div class="panel empty"><div class="empty-icon">◈</div><h3>${escapeHTML(title)}</h3><p>${escapeHTML(description)}</p>${demo ? '<button class="button primary" id="empty-demo">Load sample investigation</button>' : ""}</div>`;
 }
+function datasetNotice(dataset) {
+  if (!dataset) return "";
+  return `<div class="notice dataset-notice"><strong>Dataset context</strong><span>${fmt(dataset.bundled_synthetic_match)} records match the bundled synthetic demo · ${fmt(dataset.unverified_import)} other imported records</span><small>Content match uses normalized event IDs. Other imports are unverified; they are not assumed to be real or benign.</small></div>`;
+}
 function metric(name, value, icon, note, color = "") {
   return `<div class="metric ${color}"><div class="metric-top">${name}<span class="metric-icon">${icon}</span></div><div class="metric-number">${fmt(value)}</div><div class="metric-note">${note}</div></div>`;
 }
@@ -141,7 +145,7 @@ async function dashboard(token) {
   }
   $("#page-content").innerHTML = `
     <div class="scope-line"><span><span class="online-dot"></span> <strong>All imported activity</strong> · Latest event ${shortTime(s.latest_event)} UTC</span><span class="scope-pill">◷ &nbsp; Event-time analysis</span></div>
-    <div class="metrics">${metric("Total events", s.events, "≡", "Normalized & deduplicated")}${metric("Security alerts", s.alerts, "◇", `${s.severity.critical} critical detections`, "red")}${metric("Open investigations", s.open_alerts, "⌁", "New + investigating alerts", "orange")}${metric("Monitored hosts", s.hosts, "▣", "Hosts found in imported files", "blue")}</div>
+    ${datasetNotice(s.dataset)}<div class="metrics">${metric("Total events", s.events, "≡", "Normalized & deduplicated")}${metric("Security alerts", s.alerts, "◇", `${s.severity.critical} critical detections`, "red")}${metric("Open investigations", s.open_alerts, "⌁", "New + investigating alerts", "orange")}${metric("Monitored hosts", s.hosts, "▣", "Hosts found in imported files", "blue")}</div>
     <div class="chart-grid"><section class="panel"><div class="panel-heading"><div><h3>Security activity</h3><p class="panel-subtitle">Authentication events & rule detections</p></div><div class="legend"><span><i></i>Events</span><span><i class="alert-dot"></i>Alerts</span></div></div><div class="chart">${activityChart(s.timeline)}</div><div class="activity-caption">Last ${Math.min(24, s.timeline.length)} populated hours · UTC · Shared count scale</div></section><section class="panel"><div class="panel-heading"><div><h3>Alert severity</h3><p class="panel-subtitle">Distribution across all detections</p></div><span class="tag">ALL TIME</span></div><div class="donut-area">${severityChart(s)}</div><div class="panel-foot"><b>${s.severity.critical + s.severity.high}</b> detections require priority review</div></section></div>
     <section class="panel"><div class="panel-heading table-title"><div><h3>Recent security alerts</h3><p class="panel-subtitle">Investigate the evidence behind each detection</p></div><a class="text-link" href="#alerts">View all alerts →</a></div>${s.alerts ? alertTable(s.recent_alerts) : '<div class="empty">No detections at the current thresholds.</div>'}</section>
     <div class="bottom-grid"><section class="panel"><div class="panel-heading"><h3>Log sources</h3><span class="tag">2 SUPPORTED</span></div><div class="source-list">${["linux", "windows"].map((source) => `<div class="source-row"><span class="source-label ${source}"><i></i>${source === "linux" ? "Linux authentication" : "Windows Security"}</span><small>${fmt(s.sources[source] || 0)} events</small></div>`).join("")}</div></section><section class="panel"><div class="engine-info"><div class="engine-icon">◈</div><div><h3>Transparent by design</h3><p>Five deterministic rules. Every alert links to its source evidence.</p></div></div><div class="engine-tags"><span>MITRE ATT&CK</span><span>Event-time correlation</span><span>No external services</span></div></section></div>
@@ -241,12 +245,13 @@ const detailHeading = (eyebrow, title) =>
 function field(name, value) {
   return `<div><small>${name}</small>${escapeHTML(value)}</div>`;
 }
-async function showEvent(id) {
+async function showEvent(id, returnAlert = null) {
   try {
     const e = await api(`/events/${id}`);
     showDetail(
-      `${detailHeading("NORMALIZED EVENT", label(e.event_type))}<div class="detail-fields">${field("Time · UTC", e.timestamp)}${field("Source", e.source)}${field("Host", e.host)}${field("User", e.user)}${e.source === "windows" ? field("Domain", e.metadata.domain) + field("Logon type", e.metadata.logon_type) : ""}${field("Source IP", e.source_ip)}${field("Imported from", e.filename)}</div><div class="detail-section"><h3>Raw source record</h3><pre>${escapeHTML(e.raw)}</pre></div><div class="detail-section"><h3>Normalized record</h3><pre>${escapeHTML(JSON.stringify(e, null, 2))}</pre></div>`,
+      `${detailHeading("NORMALIZED EVENT", label(e.event_type))}${returnAlert ? '<button class="text-link" id="return-alert">← Back to investigation</button>' : ""}<div class="detail-fields">${field("Time · UTC", e.timestamp)}${field("Source", e.source)}${field("Host", e.host)}${field("User", e.user)}${e.source === "windows" ? field("Domain", e.metadata.domain) + field("Logon type", e.metadata.logon_type) : ""}${field("Source IP", e.source_ip)}${field("Imported from", e.filename)}${field("Dataset context", e.dataset_kind === "bundled_synthetic_match" ? "Matches bundled synthetic demo" : "Unverified import")}</div><div class="detail-section"><h3>Raw source record</h3><pre>${escapeHTML(e.raw)}</pre></div><div class="detail-section"><h3>Normalized record</h3><pre>${escapeHTML(JSON.stringify(e, null, 2))}</pre></div>`,
     );
+    if (returnAlert) $("#return-alert").onclick = () => showAlert(returnAlert);
   } catch (error) {
     toast(error.message, true);
   }
@@ -274,8 +279,10 @@ async function showAlert(id) {
   try {
     const a = await api(`/alerts/${id}`);
     showDetail(
-      `${detailHeading("SECURITY INVESTIGATION", a.title)}<p>${badge(a.severity)} &nbsp; ${a.mitre.map((t) => `<a class="text-link" href="https://attack.mitre.org/techniques/${t.replace(".", "/")}/" target="_blank" rel="noopener">${t} ↗</a>`).join(" &nbsp; ")}</p><div class="detail-fields">${field("Source IP", a.source_ip)}${field("Host", a.host)}${field("User", a.user)}${a.rule.startsWith("windows") ? field("Domain", a.events[0].metadata.domain) + field("Logon type", a.events[0].metadata.logon_type) : ""}${field("First seen · UTC", shortTime(a.first_seen))}${field("Last seen · UTC", shortTime(a.last_seen))}${field("Rule", a.rule)}</div><div class="detail-section"><h3>Why this alert fired</h3><p>${escapeHTML(a.reason)}</p></div>${explainDetection(a)}<div class="detail-status"><label for="investigation-status">Investigation status</label><select id="investigation-status">${["new", "investigating", "resolved"].map((s) => `<option value="${s}" ${s === a.status ? "selected" : ""}>${label(s)}</option>`).join("")}</select><button class="button secondary" id="save-status">Save status</button></div><div class="detail-section"><h3>Evidence timeline · ${a.events.length} records</h3><div class="timeline">${a.events.map((e) => `<div class="timeline-item"><time>${shortTime(e.timestamp)} UTC</time><div>${badge(e.event_type.endsWith("success") ? "success" : "failure")} &nbsp; ${escapeHTML(e.user)} @ ${escapeHTML(e.host)} <button class="text-link" data-event="${e.id}">Inspect record ↗</button></div></div>`).join("")}</div></div>`,
+      `${detailHeading("SECURITY INVESTIGATION", a.title)}<p>${badge(a.severity)} &nbsp; ${a.mitre.map((t) => `<a class="text-link" href="https://attack.mitre.org/techniques/${t.replace(".", "/")}/" target="_blank" rel="noopener">${t} ↗</a>`).join(" &nbsp; ")}</p><div class="detail-fields">${field("Source IP", a.source_ip)}${field("Host", a.host)}${field("User", a.user)}${a.rule.startsWith("windows") ? field("Domain", a.events[0].metadata.domain) + field("Logon type", a.events[0].metadata.logon_type) : ""}${field("First seen · UTC", shortTime(a.first_seen))}${field("Last seen · UTC", shortTime(a.last_seen))}${field("Rule", a.rule)}</div><div class="detail-section"><h3>Why this alert fired</h3><p>${escapeHTML(a.reason)}</p></div>${datasetNotice(a.dataset)}<div class="investigation-flow" aria-label="Investigation workflow"><span>01 · Observe evidence</span><span>→</span><span>02 · Test the rule</span><span>→</span><span>03 · Record reasoning</span></div><p><a class="button secondary" id="replay-alert" href="#lab?alert=${a.id}">Replay this evidence in Detection Lab →</a></p>${explainDetection(a)}<div class="detail-status"><label for="investigation-status">Investigation status</label><select id="investigation-status">${["new", "investigating", "resolved"].map((s) => `<option value="${s}" ${s === a.status ? "selected" : ""}>${label(s)}</option>`).join("")}</select><button class="button secondary" id="save-status">Save status</button></div><div class="detail-section"><h3>Evidence timeline · ${a.events.length} records</h3><div class="timeline">${a.events.map((e) => `<div class="timeline-item"><time>${shortTime(e.timestamp)} UTC</time><div>${badge(e.event_type.endsWith("success") ? "success" : "failure")} &nbsp; ${escapeHTML(e.user)} @ ${escapeHTML(e.host)} <button class="text-link" data-event="${e.id}">Inspect record ↗</button></div></div>`).join("")}</div></div>${noteEditor(a)}`,
     );
+    $("#replay-alert").onclick = () => $("#detail-dialog").close();
+    bindNoteEditor(a);
     $("#save-status").onclick = (e) =>
       busy(e.currentTarget, async () => {
         await api(`/alerts/${id}`, {
@@ -286,17 +293,20 @@ async function showAlert(id) {
         toast("Investigation status saved.");
         await render();
       });
-    bindEventButtons();
+    document.querySelectorAll("#detail-content [data-event]").forEach(b => {
+      b.onclick = () => showEvent(b.dataset.event, id);
+    });
   } catch (error) {
     toast(error.message, true);
   }
 }
 async function render() {
   const token = ++revision;
-  page = ["dashboard", "logs", "alerts"].includes(location.hash.slice(1))
-    ? location.hash.slice(1)
-    : "dashboard";
+  const route = location.hash.slice(1).split("?")[0];
+  page = ["dashboard", "logs", "alerts", "lab", "notebooks"].includes(route) ? route : "dashboard";
   const titles = {
+    lab: ["Detection Lab", "Understand the detection", "Replay records. Change one parameter. Follow what the engine actually detects."],
+    notebooks: ["Case Notes", "Keep the reasoning", "Manual observations, hypotheses and next steps with saved evidence snapshots."],
     dashboard: [
       "Dashboard",
       "Security overview",
@@ -324,7 +334,7 @@ async function render() {
   $("#page-content").innerHTML =
     '<div class="loading">Reading local security data…</div>';
   try {
-    await { dashboard, logs, alerts }[page](token);
+    await { dashboard, logs, alerts, lab, notebooks }[page](token);
     if (page !== "dashboard") {
       const s = await api("/stats");
       if (token === revision) $("#nav-alert-count").textContent = s.open_alerts;
@@ -409,4 +419,4 @@ $("#settings-form").onsubmit = (e) => {
   });
 };
 window.addEventListener("hashchange", render);
-render();
+window.addEventListener("DOMContentLoaded", render);
