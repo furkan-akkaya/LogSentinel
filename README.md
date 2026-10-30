@@ -4,9 +4,27 @@
 
 Authentication records describe individual attempts. LogSentinel groups related records so a reviewer can see repeated failures and success-after-failure sequences. Each alert links to its matching identity, threshold, and original evidence.
 
-The working demo produces **85 events and five alerts across four hosts**. Visitors can try three screens without a lab server. Technical readers can follow the same records through the code and tests.
+The working demo produces **85 events and five alerts across four hosts**. Visitors can inspect alerts, replay evidence in Detection Lab, and save Case Notes without a lab server. Technical readers can follow the same records through the code and tests.
 
 Start with the [project guide](docs/INDEX.md), [How it works](docs/learning/HOW_IT_WORKS.md), or the [synthetic SSH case report](docs/reports/SSH_CASE_STUDY.md). The app also serves these guides locally through **Project guide**.
+
+## Learn by investigating
+
+```mermaid
+flowchart LR
+    A[Raw evidence] --> B[Explainable alert]
+    B --> C[Isolated Detection Lab]
+    C --> D[Step-by-step engine output]
+    B --> E[Manual Case Notes + saved evidence]
+```
+
+**Detection Lab** uses the production Python engine. Change a threshold or window and replay each event without changing workspace settings. Five isolated synthetic experiments expose sequence detection, exact time boundaries, account grouping, excluded SSH methods, and Windows logon contexts. Open the lab directly from any alert with at most 200 evidence records.
+
+**Case Notes** separates observations, hypotheses and next steps. Notes retain a bounded evidence snapshot even when rule changes remove an alert. Each save replaces the previous snapshot; this is not an audit history. Export snapshots as local JSON files.
+
+Dataset labels distinguish normalized matches to bundled synthetic records from other unverified imports. The application does not assume that an uploaded file is real.
+
+See [the learning workspace, research and design rationale](docs/LEARNING_WORKSPACE.md).
 
 ## Technical decisions
 
@@ -26,7 +44,9 @@ docker compose up --build -d
 
 Open **http://127.0.0.1:8765** and select **Load demo**. On a fresh database, the bundled synthetic files produce **85 events and 5 alerts** with default thresholds. Loading them again adds zero events and zero alerts. The demo is dated October 26, 2026; the dashboard displays imported event time, not the current date.
 
-![LogSentinel dashboard](docs/screenshots/dashboard.png)
+![LogSentinel v1.2 dashboard](docs/screenshots/dashboard-v1.2.jpg)
+
+![Detection Lab using the production engine](docs/screenshots/detection-lab.jpg)
 
 More real screenshots: [Log Explorer](docs/screenshots/log-explorer.png), [Security Alerts](docs/screenshots/security-alerts.png), [evidence timeline](docs/screenshots/alert-evidence.png), and [mobile layout](docs/screenshots/mobile.png).
 
@@ -66,7 +86,18 @@ SQLite defaults to `data/logsentinel.db` relative to the working directory. Over
 - **Security Alerts:** actual evidence counts, matching identity, parameter snapshot, normal explanations, suggested analyst checks, limitations, MITRE tags, and investigation status.
 - **Import:** UTF-8 files up to 5 MiB, with duplicate detection and per-record error reporting.
 - **Settings:** configurable failure thresholds and correlation window; changes atomically reanalyze stored events.
+- **Detection Lab:** isolated synthetic scenarios or current alert evidence, parameter controls, prefix replay, optional hints, and real engine output.
+- **Case Notes:** manual assessment and reasoning, retained evidence snapshots, local JSON download.
+- **Dataset context:** content-based bundled demo matches; other imports remain unverified.
 - **Offline operation:** the UI uses local assets and makes no requests to third-party services. MITRE links open only when clicked.
+
+Generate a standalone, offline experiment from the actual engine:
+
+```sh
+python tools/export_learning_demo.py /path/to/logsentinel-experiment.html
+```
+
+It contains 280 measured parameter combinations and synthetic records. It needs no server after export. Failure-only thresholds vary together; the success threshold stays at three.
 
 ## Detection rules
 
@@ -97,6 +128,8 @@ flowchart LR
     E --> D
     D --> F[FastAPI]
     F --> G[Dashboard / Explorer / Alerts]
+    F --> H[Detection Lab: isolated engine replay]
+    F --> I[Case Notes: retained snapshots]
 ```
 
 A single Python service serves the API and static UI. SQLite provides local persistence, unique event identities, WAL journaling, and atomic ingestion/detection transactions. Vanilla JavaScript avoids a separate frontend toolchain. Parser, detection, storage, and HTTP layers are separate Python modules.
@@ -118,6 +151,8 @@ python -m pip install -e '.[test]'
 python -m pytest
 ```
 
+Tests also cover isolated replay, exact boundary experiments, evidence limits, note persistence after removed alerts, startup migration, and content-based dataset labels.
+
 Tests cover five attack scenarios, benign activity, correlation boundaries and identities, duplicates, malformed input, XML safety, date normalization, API filtering, settings, persistence, and local HTTP boundaries.
 
 Optional real-browser checks:
@@ -128,7 +163,7 @@ python -m playwright install chromium
 python tests/browser_smoke.py
 ```
 
-The browser script starts an isolated local server and database. It verifies demo loading, all screens, raw evidence, filters, import, settings, investigation status, and mobile layout. See [validation results](docs/VALIDATION.md) for the actual tested environment and limitations.
+The existing browser script starts an isolated local server and database. It covers the original workspace; new lab and notes checks are described in [v1.2 validation](docs/VALIDATION_V1_2.md). It verifies demo loading, all screens, raw evidence, filters, import, settings, investigation status, and mobile layout. See [validation results](docs/VALIDATION.md) for the actual tested environment and limitations.
 
 Reproduce all documented examples with `python tools/verify_examples.py`. The tool uses a temporary database and compares five alert snapshots and 27 evidence records with the real engine.
 
@@ -149,7 +184,7 @@ Raw logs and normalized identities are stored in plaintext SQLite. Keep the data
 
 ## Portfolio description
 
-> LogSentinel normalizes Linux SSH/sudo and Windows Security files into SQLite. Five configurable event-time rules generate evidence-linked alerts. The project includes source validation, duplicate-resistant ingestion, a local web interface, measured scenarios, and automated parser, correlation, API, and browser checks.
+> LogSentinel normalizes Linux SSH/sudo and Windows Security files into SQLite. Five configurable event-time rules generate evidence-linked alerts. The project includes source validation, duplicate-resistant ingestion, isolated engine experiments, retained analyst notes, measured scenarios, and automated parser, correlation, and API checks. Browser validation is documented with its executed scope.
 
 See [portfolio presentation](docs/PORTFOLIO.md) for a short Turkish narrative and a demonstration sequence. No personal experience, independent authorship, or production-use claim is implied.
 

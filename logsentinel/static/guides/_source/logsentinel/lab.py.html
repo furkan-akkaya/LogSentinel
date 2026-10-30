@@ -1,0 +1,139 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>logsentinel/lab.py · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../../docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1>logsentinel/lab.py</h1><p>Repository source snapshot packaged with this release.</p><pre class="source-code"><code><span id="L1"><a href="#L1" aria-label="Line 1">   1</a> &quot;&quot;&quot;Small, isolated event-time experiments using the production detection engine.&quot;&quot;&quot;</span>
+<span id="L2"><a href="#L2" aria-label="Line 2">   2</a> </span>
+<span id="L3"><a href="#L3" aria-label="Line 3">   3</a> from dataclasses import asdict</span>
+<span id="L4"><a href="#L4" aria-label="Line 4">   4</a> from datetime import datetime, timedelta, timezone</span>
+<span id="L5"><a href="#L5" aria-label="Line 5">   5</a> </span>
+<span id="L6"><a href="#L6" aria-label="Line 6">   6</a> from .detection import correlation_key, detect</span>
+<span id="L7"><a href="#L7" aria-label="Line 7">   7</a> from .parsers import parse</span>
+<span id="L8"><a href="#L8" aria-label="Line 8">   8</a> </span>
+<span id="L9"><a href="#L9" aria-label="Line 9">   9</a> MAX_REPLAY_EVENTS = 200</span>
+<span id="L10"><a href="#L10" aria-label="Line 10">  10</a> SCENARIOS = [</span>
+<span id="L11"><a href="#L11" aria-label="Line 11">  11</a>     {</span>
+<span id="L12"><a href="#L12" aria-label="Line 12">  12</a>         &quot;id&quot;: &quot;ssh_recovery&quot;,</span>
+<span id="L13"><a href="#L13" aria-label="Line 13">  13</a>         &quot;title&quot;: &quot;A login after failures&quot;,</span>
+<span id="L14"><a href="#L14" aria-label="Line 14">  14</a>         &quot;tag&quot;: &quot;SSH · sequence&quot;,</span>
+<span id="L15"><a href="#L15" aria-label="Line 15">  15</a>         &quot;objective&quot;: &quot;Separate the observed authentication sequence from a compromise claim.&quot;,</span>
+<span id="L16"><a href="#L16" aria-label="Line 16">  16</a>         &quot;question&quot;: &quot;Does a successful login after failures prove account takeover?&quot;,</span>
+<span id="L17"><a href="#L17" aria-label="Line 17">  17</a>         &quot;hint&quot;: &quot;Compare what authentication logs record with what they cannot identify.&quot;,</span>
+<span id="L18"><a href="#L18" aria-label="Line 18">  18</a>         &quot;answer&quot;: &quot;No. The same user may have corrected a password. Confirm ownership and inspect session activity before judging intent.&quot;,</span>
+<span id="L19"><a href="#L19" aria-label="Line 19">  19</a>     },</span>
+<span id="L20"><a href="#L20" aria-label="Line 20">  20</a>     {</span>
+<span id="L21"><a href="#L21" aria-label="Line 21">  21</a>         &quot;id&quot;: &quot;window_edge&quot;,</span>
+<span id="L22"><a href="#L22" aria-label="Line 22">  22</a>         &quot;title&quot;: &quot;One second changes the result&quot;,</span>
+<span id="L23"><a href="#L23" aria-label="Line 23">  23</a>         &quot;tag&quot;: &quot;SSH · time window&quot;,</span>
+<span id="L24"><a href="#L24" aria-label="Line 24">  24</a>         &quot;objective&quot;: &quot;Compare a 299-second window with a 300-second window at the inclusive boundary.&quot;,</span>
+<span id="L25"><a href="#L25" aria-label="Line 25">  25</a>         &quot;question&quot;: &quot;Why can five failures produce no alert with a 299-second window?&quot;,</span>
+<span id="L26"><a href="#L26" aria-label="Line 26">  26</a>         &quot;hint&quot;: &quot;Measure the distance from the first record to the last record.&quot;,</span>
+<span id="L27"><a href="#L27" aria-label="Line 27">  27</a>         &quot;answer&quot;: &quot;These five failures span exactly 300 seconds. A 299-second window excludes the first failure; a 300-second window includes it.&quot;,</span>
+<span id="L28"><a href="#L28" aria-label="Line 28">  28</a>     },</span>
+<span id="L29"><a href="#L29" aria-label="Line 29">  29</a>     {</span>
+<span id="L30"><a href="#L30" aria-label="Line 30">  30</a>         &quot;id&quot;: &quot;split_identity&quot;,</span>
+<span id="L31"><a href="#L31" aria-label="Line 31">  31</a>         &quot;title&quot;: &quot;Many accounts, no single match&quot;,</span>
+<span id="L32"><a href="#L32" aria-label="Line 32">  32</a>         &quot;tag&quot;: &quot;SSH · blind spot&quot;,</span>
+<span id="L33"><a href="#L33" aria-label="Line 33">  33</a>         &quot;objective&quot;: &quot;See why a per-account rule cannot aggregate password spraying across accounts.&quot;,</span>
+<span id="L34"><a href="#L34" aria-label="Line 34">  34</a>         &quot;question&quot;: &quot;Does zero alerts mean this activity is safe?&quot;,</span>
+<span id="L35"><a href="#L35" aria-label="Line 35">  35</a>         &quot;hint&quot;: &quot;Inspect the user field of each record and the rule&#x27;s correlation identity.&quot;,</span>
+<span id="L36"><a href="#L36" aria-label="Line 36">  36</a>         &quot;answer&quot;: &quot;No. Each record targets a different account. This rule groups by host, IP and user; cross-account spraying needs a separate rule.&quot;,</span>
+<span id="L37"><a href="#L37" aria-label="Line 37">  37</a>     },</span>
+<span id="L38"><a href="#L38" aria-label="Line 38">  38</a>     {</span>
+<span id="L39"><a href="#L39" aria-label="Line 39">  39</a>         &quot;id&quot;: &quot;public_keys&quot;,</span>
+<span id="L40"><a href="#L40" aria-label="Line 40">  40</a>         &quot;title&quot;: &quot;Failures that do not count&quot;,</span>
+<span id="L41"><a href="#L41" aria-label="Line 41">  41</a>         &quot;tag&quot;: &quot;SSH · authentication method&quot;,</span>
+<span id="L42"><a href="#L42" aria-label="Line 42">  42</a>         &quot;objective&quot;: &quot;Distinguish public-key failures from password-guessing evidence.&quot;,</span>
+<span id="L43"><a href="#L43" aria-label="Line 43">  43</a>         &quot;question&quot;: &quot;Why does lowering the password threshold not include these failures?&quot;,</span>
+<span id="L44"><a href="#L44" aria-label="Line 44">  44</a>         &quot;hint&quot;: &quot;Inspect the authentication method in the raw records.&quot;,</span>
+<span id="L45"><a href="#L45" aria-label="Line 45">  45</a>         &quot;answer&quot;: &quot;The rule explicitly excludes public-key failures. Multiple offered SSH keys are not password guesses; changing a threshold cannot change eligibility.&quot;,</span>
+<span id="L46"><a href="#L46" aria-label="Line 46">  46</a>     },</span>
+<span id="L47"><a href="#L47" aria-label="Line 47">  47</a>     {</span>
+<span id="L48"><a href="#L48" aria-label="Line 48">  48</a>         &quot;id&quot;: &quot;windows_context&quot;,</span>
+<span id="L49"><a href="#L49" aria-label="Line 49">  49</a>         &quot;title&quot;: &quot;Same account, different session type&quot;,</span>
+<span id="L50"><a href="#L50" aria-label="Line 50">  50</a>         &quot;tag&quot;: &quot;Windows · identity&quot;,</span>
+<span id="L51"><a href="#L51" aria-label="Line 51">  51</a>         &quot;objective&quot;: &quot;Observe how Windows logon type separates otherwise matching identities.&quot;,</span>
+<span id="L52"><a href="#L52" aria-label="Line 52">  52</a>         &quot;question&quot;: &quot;Why is the type 3 success not joined to type 10 failures?&quot;,</span>
+<span id="L53"><a href="#L53" aria-label="Line 53">  53</a>         &quot;hint&quot;: &quot;Compare all five identity fields, including domain and logon type.&quot;,</span>
+<span id="L54"><a href="#L54" aria-label="Line 54">  54</a>         &quot;answer&quot;: &quot;Type 3 is a network logon; type 10 is remote interactive. The engine keeps these contexts separate, so this success does not complete that failure sequence.&quot;,</span>
+<span id="L55"><a href="#L55" aria-label="Line 55">  55</a>     },</span>
+<span id="L56"><a href="#L56" aria-label="Line 56">  56</a> ]</span>
+<span id="L57"><a href="#L57" aria-label="Line 57">  57</a> </span>
+<span id="L58"><a href="#L58" aria-label="Line 58">  58</a> </span>
+<span id="L59"><a href="#L59" aria-label="Line 59">  59</a> def scenario_events(identifier):</span>
+<span id="L60"><a href="#L60" aria-label="Line 60">  60</a>     &quot;&quot;&quot;Generate documented synthetic records through the actual parsers.&quot;&quot;&quot;</span>
+<span id="L61"><a href="#L61" aria-label="Line 61">  61</a>     if identifier not in {s[&quot;id&quot;] for s in SCENARIOS}:</span>
+<span id="L62"><a href="#L62" aria-label="Line 62">  62</a>         raise ValueError(&quot;Unknown lab scenario&quot;)</span>
+<span id="L63"><a href="#L63" aria-label="Line 63">  63</a>     if identifier == &quot;windows_context&quot;:</span>
+<span id="L64"><a href="#L64" aria-label="Line 64">  64</a>         import json</span>
+<span id="L65"><a href="#L65" aria-label="Line 65">  65</a> </span>
+<span id="L66"><a href="#L66" aria-label="Line 66">  66</a>         records = [</span>
+<span id="L67"><a href="#L67" aria-label="Line 67">  67</a>             {</span>
+<span id="L68"><a href="#L68" aria-label="Line 68">  68</a>                 &quot;System&quot;: {</span>
+<span id="L69"><a href="#L69" aria-label="Line 69">  69</a>                     &quot;EventID&quot;: 4625 if i &lt; 4 else 4624,</span>
+<span id="L70"><a href="#L70" aria-label="Line 70">  70</a>                     &quot;Computer&quot;: &quot;lab-windows&quot;,</span>
+<span id="L71"><a href="#L71" aria-label="Line 71">  71</a>                     &quot;TimeCreated&quot;: f&quot;2026-10-26T12:00:0{i}Z&quot;,</span>
+<span id="L72"><a href="#L72" aria-label="Line 72">  72</a>                 },</span>
+<span id="L73"><a href="#L73" aria-label="Line 73">  73</a>                 &quot;EventData&quot;: {</span>
+<span id="L74"><a href="#L74" aria-label="Line 74">  74</a>                     &quot;TargetUserName&quot;: &quot;analyst&quot;,</span>
+<span id="L75"><a href="#L75" aria-label="Line 75">  75</a>                     &quot;TargetDomainName&quot;: &quot;LAB&quot;,</span>
+<span id="L76"><a href="#L76" aria-label="Line 76">  76</a>                     &quot;IpAddress&quot;: &quot;192.0.2.20&quot;,</span>
+<span id="L77"><a href="#L77" aria-label="Line 77">  77</a>                     &quot;LogonType&quot;: &quot;10&quot; if i &lt; 4 else &quot;3&quot;,</span>
+<span id="L78"><a href="#L78" aria-label="Line 78">  78</a>                 },</span>
+<span id="L79"><a href="#L79" aria-label="Line 79">  79</a>             }</span>
+<span id="L80"><a href="#L80" aria-label="Line 80">  80</a>             for i in range(5)</span>
+<span id="L81"><a href="#L81" aria-label="Line 81">  81</a>         ]</span>
+<span id="L82"><a href="#L82" aria-label="Line 82">  82</a>         parsed = parse(json.dumps(records), &quot;json&quot;)</span>
+<span id="L83"><a href="#L83" aria-label="Line 83">  83</a>     else:</span>
+<span id="L84"><a href="#L84" aria-label="Line 84">  84</a>         offsets = (</span>
+<span id="L85"><a href="#L85" aria-label="Line 85">  85</a>             [0, 75, 150, 225, 300] if identifier == &quot;window_edge&quot; else list(range(6))</span>
+<span id="L86"><a href="#L86" aria-label="Line 86">  86</a>         )</span>
+<span id="L87"><a href="#L87" aria-label="Line 87">  87</a>         records = []</span>
+<span id="L88"><a href="#L88" aria-label="Line 88">  88</a>         for i, offset in enumerate(offsets):</span>
+<span id="L89"><a href="#L89" aria-label="Line 89">  89</a>             stamp = datetime(2026, 10, 26, 12, tzinfo=timezone.utc) + timedelta(</span>
+<span id="L90"><a href="#L90" aria-label="Line 90">  90</a>                 seconds=offset</span>
+<span id="L91"><a href="#L91" aria-label="Line 91">  91</a>             )</span>
+<span id="L92"><a href="#L92" aria-label="Line 92">  92</a>             outcome = (</span>
+<span id="L93"><a href="#L93" aria-label="Line 93">  93</a>                 &quot;Accepted&quot; if identifier == &quot;ssh_recovery&quot; and i == 5 else &quot;Failed&quot;</span>
+<span id="L94"><a href="#L94" aria-label="Line 94">  94</a>             )</span>
+<span id="L95"><a href="#L95" aria-label="Line 95">  95</a>             method = &quot;publickey&quot; if identifier == &quot;public_keys&quot; else &quot;password&quot;</span>
+<span id="L96"><a href="#L96" aria-label="Line 96">  96</a>             user = f&quot;user{i}&quot; if identifier == &quot;split_identity&quot; else &quot;analyst&quot;</span>
+<span id="L97"><a href="#L97" aria-label="Line 97">  97</a>             records.append(</span>
+<span id="L98"><a href="#L98" aria-label="Line 98">  98</a>                 f&quot;{stamp.isoformat()} lab-ssh sshd[100]: {outcome} {method} for {user} from 192.0.2.10 port {40000 + i} ssh2&quot;</span>
+<span id="L99"><a href="#L99" aria-label="Line 99">  99</a>             )</span>
+<span id="L100"><a href="#L100" aria-label="Line 100"> 100</a>         parsed = parse(&quot;\n&quot;.join(records), &quot;linux&quot;)</span>
+<span id="L101"><a href="#L101" aria-label="Line 101"> 101</a>     assert not parsed.rejected and not parsed.ignored</span>
+<span id="L102"><a href="#L102" aria-label="Line 102"> 102</a>     return [</span>
+<span id="L103"><a href="#L103" aria-label="Line 103"> 103</a>         {**asdict(e), &quot;id&quot;: e.id, &quot;filename&quot;: &quot;isolated synthetic lab&quot;}</span>
+<span id="L104"><a href="#L104" aria-label="Line 104"> 104</a>         for e in parsed.events</span>
+<span id="L105"><a href="#L105" aria-label="Line 105"> 105</a>     ]</span>
+<span id="L106"><a href="#L106" aria-label="Line 106"> 106</a> </span>
+<span id="L107"><a href="#L107" aria-label="Line 107"> 107</a> </span>
+<span id="L108"><a href="#L108" aria-label="Line 108"> 108</a> def replay(events, parameters):</span>
+<span id="L109"><a href="#L109" aria-label="Line 109"> 109</a>     &quot;&quot;&quot;Replay sorted prefixes. Never write events, settings, alerts, or statuses.&quot;&quot;&quot;</span>
+<span id="L110"><a href="#L110" aria-label="Line 110"> 110</a>     if len(events) &gt; MAX_REPLAY_EVENTS:</span>
+<span id="L111"><a href="#L111" aria-label="Line 111"> 111</a>         raise ValueError(</span>
+<span id="L112"><a href="#L112" aria-label="Line 112"> 112</a>             f&quot;Replay supports at most {MAX_REPLAY_EVENTS} evidence records; this alert is too large&quot;</span>
+<span id="L113"><a href="#L113" aria-label="Line 113"> 113</a>         )</span>
+<span id="L114"><a href="#L114" aria-label="Line 114"> 114</a>     ordered = sorted(events, key=lambda e: (e[&quot;timestamp&quot;], e[&quot;id&quot;]))</span>
+<span id="L115"><a href="#L115" aria-label="Line 115"> 115</a>     steps, previous = [], {}</span>
+<span id="L116"><a href="#L116" aria-label="Line 116"> 116</a>     for index, event in enumerate(ordered):</span>
+<span id="L117"><a href="#L117" aria-label="Line 117"> 117</a>         alerts = detect(ordered[: index + 1], parameters)</span>
+<span id="L118"><a href="#L118" aria-label="Line 118"> 118</a>         current = {a[&quot;id&quot;]: a for a in alerts}</span>
+<span id="L119"><a href="#L119" aria-label="Line 119"> 119</a>         steps.append(</span>
+<span id="L120"><a href="#L120" aria-label="Line 120"> 120</a>             {</span>
+<span id="L121"><a href="#L121" aria-label="Line 121"> 121</a>                 &quot;event_id&quot;: event[&quot;id&quot;],</span>
+<span id="L122"><a href="#L122" aria-label="Line 122"> 122</a>                 &quot;eligible&quot;: correlation_key(event) is not None,</span>
+<span id="L123"><a href="#L123" aria-label="Line 123"> 123</a>                 &quot;identity&quot;: list(correlation_key(event) or []),</span>
+<span id="L124"><a href="#L124" aria-label="Line 124"> 124</a>                 &quot;alerts_total&quot;: len(alerts),</span>
+<span id="L125"><a href="#L125" aria-label="Line 125"> 125</a>                 &quot;triggered&quot;: [a for key, a in current.items() if key not in previous],</span>
+<span id="L126"><a href="#L126" aria-label="Line 126"> 126</a>                 &quot;updated&quot;: [</span>
+<span id="L127"><a href="#L127" aria-label="Line 127"> 127</a>                     a</span>
+<span id="L128"><a href="#L128" aria-label="Line 128"> 128</a>                     for key, a in current.items()</span>
+<span id="L129"><a href="#L129" aria-label="Line 129"> 129</a>                     if key in previous and a[&quot;evidence&quot;] != previous[key][&quot;evidence&quot;]</span>
+<span id="L130"><a href="#L130" aria-label="Line 130"> 130</a>                 ],</span>
+<span id="L131"><a href="#L131" aria-label="Line 131"> 131</a>             }</span>
+<span id="L132"><a href="#L132" aria-label="Line 132"> 132</a>         )</span>
+<span id="L133"><a href="#L133" aria-label="Line 133"> 133</a>         previous = current</span>
+<span id="L134"><a href="#L134" aria-label="Line 134"> 134</a>     return {</span>
+<span id="L135"><a href="#L135" aria-label="Line 135"> 135</a>         &quot;events&quot;: ordered,</span>
+<span id="L136"><a href="#L136" aria-label="Line 136"> 136</a>         &quot;steps&quot;: steps,</span>
+<span id="L137"><a href="#L137" aria-label="Line 137"> 137</a>         &quot;alerts&quot;: list(previous.values()),</span>
+<span id="L138"><a href="#L138" aria-label="Line 138"> 138</a>         &quot;settings&quot;: parameters,</span>
+<span id="L139"><a href="#L139" aria-label="Line 139"> 139</a>     }</span></code></pre></main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

@@ -1,0 +1,256 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>tests/test_lab_notebooks.py · LogSentinel</title><link rel="stylesheet" href="../../../guide.css"></head><body><a class="skip-link" href="#content">Skip to content</a><header><a href="/">◈ LogSentinel</a><nav aria-label="Guide navigation"><a href="../../docs/INDEX.html">Project guide</a><a href="/">Open workspace →</a></nav></header><main id="content" tabindex="-1"><h1>tests/test_lab_notebooks.py</h1><p>Repository source snapshot packaged with this release.</p><pre class="source-code"><code><span id="L1"><a href="#L1" aria-label="Line 1">   1</a> &quot;&quot;&quot;Behavioral checks for isolated learning, manual notes and truthful data labels.&quot;&quot;&quot;</span>
+<span id="L2"><a href="#L2" aria-label="Line 2">   2</a> </span>
+<span id="L3"><a href="#L3" aria-label="Line 3">   3</a> import sqlite3</span>
+<span id="L4"><a href="#L4" aria-label="Line 4">   4</a> </span>
+<span id="L5"><a href="#L5" aria-label="Line 5">   5</a> import pytest</span>
+<span id="L6"><a href="#L6" aria-label="Line 6">   6</a> from fastapi.testclient import TestClient</span>
+<span id="L7"><a href="#L7" aria-label="Line 7">   7</a> </span>
+<span id="L8"><a href="#L8" aria-label="Line 8">   8</a> from logsentinel.app import create_app</span>
+<span id="L9"><a href="#L9" aria-label="Line 9">   9</a> from logsentinel.detection import DEFAULTS, detect</span>
+<span id="L10"><a href="#L10" aria-label="Line 10">  10</a> from logsentinel.lab import MAX_REPLAY_EVENTS, SCENARIOS, replay, scenario_events</span>
+<span id="L11"><a href="#L11" aria-label="Line 11">  11</a> </span>
+<span id="L12"><a href="#L12" aria-label="Line 12">  12</a> </span>
+<span id="L13"><a href="#L13" aria-label="Line 13">  13</a> def run(client, scenario=&quot;ssh_recovery&quot;, **settings):</span>
+<span id="L14"><a href="#L14" aria-label="Line 14">  14</a>     return client.post(</span>
+<span id="L15"><a href="#L15" aria-label="Line 15">  15</a>         &quot;/api/lab/replay&quot;,</span>
+<span id="L16"><a href="#L16" aria-label="Line 16">  16</a>         json={&quot;scenario&quot;: scenario, &quot;settings&quot;: {**DEFAULTS, **settings}},</span>
+<span id="L17"><a href="#L17" aria-label="Line 17">  17</a>     )</span>
+<span id="L18"><a href="#L18" aria-label="Line 18">  18</a> </span>
+<span id="L19"><a href="#L19" aria-label="Line 19">  19</a> </span>
+<span id="L20"><a href="#L20" aria-label="Line 20">  20</a> @pytest.mark.parametrize(</span>
+<span id="L21"><a href="#L21" aria-label="Line 21">  21</a>     &quot;scenario,count&quot;,</span>
+<span id="L22"><a href="#L22" aria-label="Line 22">  22</a>     [</span>
+<span id="L23"><a href="#L23" aria-label="Line 23">  23</a>         (&quot;ssh_recovery&quot;, 2),</span>
+<span id="L24"><a href="#L24" aria-label="Line 24">  24</a>         (&quot;window_edge&quot;, 1),</span>
+<span id="L25"><a href="#L25" aria-label="Line 25">  25</a>         (&quot;split_identity&quot;, 0),</span>
+<span id="L26"><a href="#L26" aria-label="Line 26">  26</a>         (&quot;public_keys&quot;, 0),</span>
+<span id="L27"><a href="#L27" aria-label="Line 27">  27</a>         (&quot;windows_context&quot;, 0),</span>
+<span id="L28"><a href="#L28" aria-label="Line 28">  28</a>     ],</span>
+<span id="L29"><a href="#L29" aria-label="Line 29">  29</a> )</span>
+<span id="L30"><a href="#L30" aria-label="Line 30">  30</a> def test_scenarios_are_real_engine_results_at_every_step(client, scenario, count):</span>
+<span id="L31"><a href="#L31" aria-label="Line 31">  31</a>     response = run(client, scenario)</span>
+<span id="L32"><a href="#L32" aria-label="Line 32">  32</a>     assert response.status_code == 200</span>
+<span id="L33"><a href="#L33" aria-label="Line 33">  33</a>     result = response.json()</span>
+<span id="L34"><a href="#L34" aria-label="Line 34">  34</a>     assert len(result[&quot;alerts&quot;]) == count</span>
+<span id="L35"><a href="#L35" aria-label="Line 35">  35</a>     assert result[&quot;scope&quot;][&quot;kind&quot;] == &quot;synthetic_scenario&quot;</span>
+<span id="L36"><a href="#L36" aria-label="Line 36">  36</a>     for i, step in enumerate(result[&quot;steps&quot;]):</span>
+<span id="L37"><a href="#L37" aria-label="Line 37">  37</a>         expected = detect(result[&quot;events&quot;][: i + 1], DEFAULTS)</span>
+<span id="L38"><a href="#L38" aria-label="Line 38">  38</a>         assert step[&quot;alerts_total&quot;] == len(expected)</span>
+<span id="L39"><a href="#L39" aria-label="Line 39">  39</a>         assert all(a in expected for a in step[&quot;triggered&quot;] + step[&quot;updated&quot;])</span>
+<span id="L40"><a href="#L40" aria-label="Line 40">  40</a> </span>
+<span id="L41"><a href="#L41" aria-label="Line 41">  41</a> </span>
+<span id="L42"><a href="#L42" aria-label="Line 42">  42</a> def test_replay_time_boundary_and_threshold(client):</span>
+<span id="L43"><a href="#L43" aria-label="Line 43">  43</a>     assert len(run(client, &quot;window_edge&quot;, window_seconds=299).json()[&quot;alerts&quot;]) == 0</span>
+<span id="L44"><a href="#L44" aria-label="Line 44">  44</a>     assert len(run(client, &quot;window_edge&quot;, window_seconds=300).json()[&quot;alerts&quot;]) == 1</span>
+<span id="L45"><a href="#L45" aria-label="Line 45">  45</a>     assert len(run(client, &quot;window_edge&quot;, ssh_threshold=6).json()[&quot;alerts&quot;]) == 0</span>
+<span id="L46"><a href="#L46" aria-label="Line 46">  46</a>     result = run(client, &quot;ssh_recovery&quot;).json()</span>
+<span id="L47"><a href="#L47" aria-label="Line 47">  47</a>     assert [len(s[&quot;triggered&quot;]) for s in result[&quot;steps&quot;]] == [0, 0, 0, 0, 1, 1]</span>
+<span id="L48"><a href="#L48" aria-label="Line 48">  48</a>     assert result[&quot;baseline&quot;][&quot;settings&quot;] == DEFAULTS</span>
+<span id="L49"><a href="#L49" aria-label="Line 49">  49</a> </span>
+<span id="L50"><a href="#L50" aria-label="Line 50">  50</a> </span>
+<span id="L51"><a href="#L51" aria-label="Line 51">  51</a> def test_scenarios_expose_exclusions_and_identity(client):</span>
+<span id="L52"><a href="#L52" aria-label="Line 52">  52</a>     assert all(not s[&quot;eligible&quot;] for s in run(client, &quot;public_keys&quot;).json()[&quot;steps&quot;])</span>
+<span id="L53"><a href="#L53" aria-label="Line 53">  53</a>     data = run(client, &quot;windows_context&quot;).json()</span>
+<span id="L54"><a href="#L54" aria-label="Line 54">  54</a>     assert data[&quot;steps&quot;][0][&quot;identity&quot;][-1] == &quot;10&quot;</span>
+<span id="L55"><a href="#L55" aria-label="Line 55">  55</a>     assert data[&quot;steps&quot;][-1][&quot;identity&quot;][-1] == &quot;3&quot;</span>
+<span id="L56"><a href="#L56" aria-label="Line 56">  56</a>     assert len(client.get(&quot;/api/lab&quot;).json()[&quot;scenarios&quot;]) == len(SCENARIOS)</span>
+<span id="L57"><a href="#L57" aria-label="Line 57">  57</a> </span>
+<span id="L58"><a href="#L58" aria-label="Line 58">  58</a> </span>
+<span id="L59"><a href="#L59" aria-label="Line 59">  59</a> def test_lab_never_mutates_workspace_even_for_alert_evidence(client):</span>
+<span id="L60"><a href="#L60" aria-label="Line 60">  60</a>     client.post(&quot;/api/demo&quot;)</span>
+<span id="L61"><a href="#L61" aria-label="Line 61">  61</a>     alert = client.get(&quot;/api/alerts&quot;).json()[&quot;items&quot;][0]</span>
+<span id="L62"><a href="#L62" aria-label="Line 62">  62</a>     client.patch(f&quot;/api/alerts/{alert[&#x27;id&#x27;]}&quot;, json={&quot;status&quot;: &quot;investigating&quot;})</span>
+<span id="L63"><a href="#L63" aria-label="Line 63">  63</a>     before = {</span>
+<span id="L64"><a href="#L64" aria-label="Line 64">  64</a>         table: client.get(f&quot;/api/{table}&quot;).json()</span>
+<span id="L65"><a href="#L65" aria-label="Line 65">  65</a>         for table in [&quot;stats&quot;, &quot;settings&quot;, &quot;alerts&quot;, &quot;events&quot;, &quot;notebooks&quot;]</span>
+<span id="L66"><a href="#L66" aria-label="Line 66">  66</a>     }</span>
+<span id="L67"><a href="#L67" aria-label="Line 67">  67</a>     for scenario in SCENARIOS:</span>
+<span id="L68"><a href="#L68" aria-label="Line 68">  68</a>         assert run(client, scenario[&quot;id&quot;], window_seconds=10).status_code == 200</span>
+<span id="L69"><a href="#L69" aria-label="Line 69">  69</a>     response = client.post(</span>
+<span id="L70"><a href="#L70" aria-label="Line 70">  70</a>         &quot;/api/lab/replay&quot;,</span>
+<span id="L71"><a href="#L71" aria-label="Line 71">  71</a>         json={&quot;alert_id&quot;: alert[&quot;id&quot;], &quot;settings&quot;: {**DEFAULTS, &quot;sudo_threshold&quot;: 100}},</span>
+<span id="L72"><a href="#L72" aria-label="Line 72">  72</a>     )</span>
+<span id="L73"><a href="#L73" aria-label="Line 73">  73</a>     assert response.status_code == 200</span>
+<span id="L74"><a href="#L74" aria-label="Line 74">  74</a>     data = response.json()</span>
+<span id="L75"><a href="#L75" aria-label="Line 75">  75</a>     assert data[&quot;scope&quot;][&quot;kind&quot;] == &quot;alert_evidence&quot;</span>
+<span id="L76"><a href="#L76" aria-label="Line 76">  76</a>     assert {e[&quot;id&quot;] for e in data[&quot;events&quot;]} == set(alert[&quot;evidence&quot;])</span>
+<span id="L77"><a href="#L77" aria-label="Line 77">  77</a>     assert data[&quot;alerts&quot;] == []</span>
+<span id="L78"><a href="#L78" aria-label="Line 78">  78</a>     after = {table: client.get(f&quot;/api/{table}&quot;).json() for table in before}</span>
+<span id="L79"><a href="#L79" aria-label="Line 79">  79</a>     assert before == after</span>
+<span id="L80"><a href="#L80" aria-label="Line 80">  80</a> </span>
+<span id="L81"><a href="#L81" aria-label="Line 81">  81</a> </span>
+<span id="L82"><a href="#L82" aria-label="Line 82">  82</a> @pytest.mark.parametrize(</span>
+<span id="L83"><a href="#L83" aria-label="Line 83">  83</a>     &quot;body&quot;,</span>
+<span id="L84"><a href="#L84" aria-label="Line 84">  84</a>     [</span>
+<span id="L85"><a href="#L85" aria-label="Line 85">  85</a>         {&quot;settings&quot;: DEFAULTS},</span>
+<span id="L86"><a href="#L86" aria-label="Line 86">  86</a>         {&quot;scenario&quot;: &quot;no-such&quot;, &quot;settings&quot;: DEFAULTS},</span>
+<span id="L87"><a href="#L87" aria-label="Line 87">  87</a>         {&quot;scenario&quot;: &quot;ssh_recovery&quot;, &quot;alert_id&quot;: &quot;x&quot;, &quot;settings&quot;: DEFAULTS},</span>
+<span id="L88"><a href="#L88" aria-label="Line 88">  88</a>         {&quot;scenario&quot;: &quot;ssh_recovery&quot;, &quot;settings&quot;: {**DEFAULTS, &quot;window_seconds&quot;: &quot;300&quot;}},</span>
+<span id="L89"><a href="#L89" aria-label="Line 89">  89</a>         {&quot;scenario&quot;: &quot;ssh_recovery&quot;, &quot;settings&quot;: {**DEFAULTS, &quot;ssh_threshold&quot;: 1}},</span>
+<span id="L90"><a href="#L90" aria-label="Line 90">  90</a>         {&quot;scenario&quot;: &quot;ssh_recovery&quot;, &quot;settings&quot;: DEFAULTS, &quot;unexpected&quot;: True},</span>
+<span id="L91"><a href="#L91" aria-label="Line 91">  91</a>     ],</span>
+<span id="L92"><a href="#L92" aria-label="Line 92">  92</a> )</span>
+<span id="L93"><a href="#L93" aria-label="Line 93">  93</a> def test_replay_rejects_ambiguous_or_invalid_input(client, body):</span>
+<span id="L94"><a href="#L94" aria-label="Line 94">  94</a>     assert client.post(&quot;/api/lab/replay&quot;, json=body).status_code == 422</span>
+<span id="L95"><a href="#L95" aria-label="Line 95">  95</a> </span>
+<span id="L96"><a href="#L96" aria-label="Line 96">  96</a> </span>
+<span id="L97"><a href="#L97" aria-label="Line 97">  97</a> def test_replay_bounded_and_missing_alert(client):</span>
+<span id="L98"><a href="#L98" aria-label="Line 98">  98</a>     assert (</span>
+<span id="L99"><a href="#L99" aria-label="Line 99">  99</a>         client.post(</span>
+<span id="L100"><a href="#L100" aria-label="Line 100"> 100</a>             &quot;/api/lab/replay&quot;, json={&quot;alert_id&quot;: &quot;missing&quot;, &quot;settings&quot;: DEFAULTS}</span>
+<span id="L101"><a href="#L101" aria-label="Line 101"> 101</a>         ).status_code</span>
+<span id="L102"><a href="#L102" aria-label="Line 102"> 102</a>         == 404</span>
+<span id="L103"><a href="#L103" aria-label="Line 103"> 103</a>     )</span>
+<span id="L104"><a href="#L104" aria-label="Line 104"> 104</a>     events = scenario_events(&quot;ssh_recovery&quot;)</span>
+<span id="L105"><a href="#L105" aria-label="Line 105"> 105</a>     with pytest.raises(ValueError, match=&quot;at most 200&quot;):</span>
+<span id="L106"><a href="#L106" aria-label="Line 106"> 106</a>         replay(events * (MAX_REPLAY_EVENTS // len(events) + 1), DEFAULTS)</span>
+<span id="L107"><a href="#L107" aria-label="Line 107"> 107</a>     assert replay(list(reversed(events)), DEFAULTS) == replay(events, DEFAULTS)</span>
+<span id="L108"><a href="#L108" aria-label="Line 108"> 108</a> </span>
+<span id="L109"><a href="#L109" aria-label="Line 109"> 109</a> </span>
+<span id="L110"><a href="#L110" aria-label="Line 110"> 110</a> def test_notebook_survives_removed_alert_and_restart(tmp_path):</span>
+<span id="L111"><a href="#L111" aria-label="Line 111"> 111</a>     path = tmp_path / &quot;notes.db&quot;</span>
+<span id="L112"><a href="#L112" aria-label="Line 112"> 112</a>     with TestClient(create_app(path), base_url=&quot;http://localhost&quot;) as c:</span>
+<span id="L113"><a href="#L113" aria-label="Line 113"> 113</a>         c.post(&quot;/api/demo&quot;)</span>
+<span id="L114"><a href="#L114" aria-label="Line 114"> 114</a>         a = c.get(&quot;/api/alerts&quot;).json()[&quot;items&quot;][0]</span>
+<span id="L115"><a href="#L115" aria-label="Line 115"> 115</a>         note = {</span>
+<span id="L116"><a href="#L116" aria-label="Line 116"> 116</a>             &quot;assessment&quot;: &quot;undetermined&quot;,</span>
+<span id="L117"><a href="#L117" aria-label="Line 117"> 117</a>             &quot;observation&quot;: &quot;Four sudo failures&quot;,</span>
+<span id="L118"><a href="#L118" aria-label="Line 118"> 118</a>             &quot;hypothesis&quot;: &quot;A typo is possible&quot;,</span>
+<span id="L119"><a href="#L119" aria-label="Line 119"> 119</a>             &quot;next_step&quot;: &quot;Ask the account owner&quot;,</span>
+<span id="L120"><a href="#L120" aria-label="Line 120"> 120</a>         }</span>
+<span id="L121"><a href="#L121" aria-label="Line 121"> 121</a>         saved = c.put(f&quot;/api/alerts/{a[&#x27;id&#x27;]}/notebook&quot;, json=note).json()</span>
+<span id="L122"><a href="#L122" aria-label="Line 122"> 122</a>         assert saved[&quot;note&quot;] == note</span>
+<span id="L123"><a href="#L123" aria-label="Line 123"> 123</a>         assert saved[&quot;alert&quot;][&quot;evidence&quot;] == [e[&quot;id&quot;] for e in saved[&quot;events&quot;]]</span>
+<span id="L124"><a href="#L124" aria-label="Line 124"> 124</a>         assert saved[&quot;evidence_omitted&quot;] == 0</span>
+<span id="L125"><a href="#L125" aria-label="Line 125"> 125</a>         assert c.get(f&quot;/api/alerts/{a[&#x27;id&#x27;]}&quot;).json()[&quot;notebook&quot;] == saved</span>
+<span id="L126"><a href="#L126" aria-label="Line 126"> 126</a>         c.put(&quot;/api/settings&quot;, json={**DEFAULTS, &quot;sudo_threshold&quot;: 100})</span>
+<span id="L127"><a href="#L127" aria-label="Line 127"> 127</a>         assert c.get(f&quot;/api/alerts/{a[&#x27;id&#x27;]}&quot;).status_code == 404</span>
+<span id="L128"><a href="#L128" aria-label="Line 128"> 128</a>         assert c.get(&quot;/api/notebooks&quot;).json()[&quot;items&quot;][0][&quot;active&quot;] is False</span>
+<span id="L129"><a href="#L129" aria-label="Line 129"> 129</a>     with TestClient(create_app(path), base_url=&quot;http://localhost&quot;) as c:</span>
+<span id="L130"><a href="#L130" aria-label="Line 130"> 130</a>         assert c.get(f&quot;/api/notebooks/{a[&#x27;id&#x27;]}&quot;).json() == saved</span>
+<span id="L131"><a href="#L131" aria-label="Line 131"> 131</a>         c.put(&quot;/api/settings&quot;, json=DEFAULTS)</span>
+<span id="L132"><a href="#L132" aria-label="Line 132"> 132</a>         assert c.get(&quot;/api/notebooks&quot;).json()[&quot;items&quot;][0][&quot;active&quot;] is True</span>
+<span id="L133"><a href="#L133" aria-label="Line 133"> 133</a>         updated = c.put(</span>
+<span id="L134"><a href="#L134" aria-label="Line 134"> 134</a>             f&quot;/api/alerts/{a[&#x27;id&#x27;]}/notebook&quot;,</span>
+<span id="L135"><a href="#L135" aria-label="Line 135"> 135</a>             json={**note, &quot;assessment&quot;: &quot;likely_benign&quot;},</span>
+<span id="L136"><a href="#L136" aria-label="Line 136"> 136</a>         ).json()</span>
+<span id="L137"><a href="#L137" aria-label="Line 137"> 137</a>         assert updated[&quot;note&quot;][&quot;assessment&quot;] == &quot;likely_benign&quot;</span>
+<span id="L138"><a href="#L138" aria-label="Line 138"> 138</a>         assert len(c.get(&quot;/api/notebooks&quot;).json()[&quot;items&quot;]) == 1</span>
+<span id="L139"><a href="#L139" aria-label="Line 139"> 139</a>         assert saved[&quot;note&quot;][&quot;assessment&quot;] == &quot;undetermined&quot;</span>
+<span id="L140"><a href="#L140" aria-label="Line 140"> 140</a> </span>
+<span id="L141"><a href="#L141" aria-label="Line 141"> 141</a> </span>
+<span id="L142"><a href="#L142" aria-label="Line 142"> 142</a> def test_notebook_validation_and_local_boundary(client):</span>
+<span id="L143"><a href="#L143" aria-label="Line 143"> 143</a>     assert client.put(&quot;/api/alerts/missing/notebook&quot;, json={}).status_code == 404</span>
+<span id="L144"><a href="#L144" aria-label="Line 144"> 144</a>     assert client.get(&quot;/api/notebooks/missing&quot;).status_code == 404</span>
+<span id="L145"><a href="#L145" aria-label="Line 145"> 145</a>     client.post(&quot;/api/demo&quot;)</span>
+<span id="L146"><a href="#L146" aria-label="Line 146"> 146</a>     a = client.get(&quot;/api/alerts&quot;).json()[&quot;items&quot;][0]</span>
+<span id="L147"><a href="#L147" aria-label="Line 147"> 147</a>     endpoint = f&quot;/api/alerts/{a[&#x27;id&#x27;]}/notebook&quot;</span>
+<span id="L148"><a href="#L148" aria-label="Line 148"> 148</a>     for value in [</span>
+<span id="L149"><a href="#L149" aria-label="Line 149"> 149</a>         {&quot;assessment&quot;: &quot;confirmed_compromise&quot;},</span>
+<span id="L150"><a href="#L150" aria-label="Line 150"> 150</a>         {&quot;observation&quot;: &quot;a&quot; * 4001},</span>
+<span id="L151"><a href="#L151" aria-label="Line 151"> 151</a>         {&quot;observation&quot;: 12},</span>
+<span id="L152"><a href="#L152" aria-label="Line 152"> 152</a>         {&quot;unknown&quot;: &quot;field&quot;},</span>
+<span id="L153"><a href="#L153" aria-label="Line 153"> 153</a>     ]:</span>
+<span id="L154"><a href="#L154" aria-label="Line 154"> 154</a>         assert client.put(endpoint, json=value).status_code == 422</span>
+<span id="L155"><a href="#L155" aria-label="Line 155"> 155</a>     assert (</span>
+<span id="L156"><a href="#L156" aria-label="Line 156"> 156</a>         client.put(</span>
+<span id="L157"><a href="#L157" aria-label="Line 157"> 157</a>             endpoint, json={}, headers={&quot;Origin&quot;: &quot;https://evil.example&quot;}</span>
+<span id="L158"><a href="#L158" aria-label="Line 158"> 158</a>         ).status_code</span>
+<span id="L159"><a href="#L159" aria-label="Line 159"> 159</a>         == 403</span>
+<span id="L160"><a href="#L160" aria-label="Line 160"> 160</a>     )</span>
+<span id="L161"><a href="#L161" aria-label="Line 161"> 161</a>     assert (</span>
+<span id="L162"><a href="#L162" aria-label="Line 162"> 162</a>         client.post(</span>
+<span id="L163"><a href="#L163" aria-label="Line 163"> 163</a>             &quot;/api/lab/replay&quot;,</span>
+<span id="L164"><a href="#L164" aria-label="Line 164"> 164</a>             json={&quot;scenario&quot;: &quot;ssh_recovery&quot;, &quot;settings&quot;: DEFAULTS},</span>
+<span id="L165"><a href="#L165" aria-label="Line 165"> 165</a>             headers={&quot;Origin&quot;: &quot;https://evil.example&quot;},</span>
+<span id="L166"><a href="#L166" aria-label="Line 166"> 166</a>         ).status_code</span>
+<span id="L167"><a href="#L167" aria-label="Line 167"> 167</a>         == 403</span>
+<span id="L168"><a href="#L168" aria-label="Line 168"> 168</a>     )</span>
+<span id="L169"><a href="#L169" aria-label="Line 169"> 169</a> </span>
+<span id="L170"><a href="#L170" aria-label="Line 170"> 170</a> </span>
+<span id="L171"><a href="#L171" aria-label="Line 171"> 171</a> def test_dataset_content_matches_do_not_depend_on_filename(client, samples):</span>
+<span id="L172"><a href="#L172" aria-label="Line 172"> 172</a>     assert client.get(&quot;/api/stats&quot;).json()[&quot;dataset&quot;] == {</span>
+<span id="L173"><a href="#L173" aria-label="Line 173"> 173</a>         &quot;bundled_synthetic_match&quot;: 0,</span>
+<span id="L174"><a href="#L174" aria-label="Line 174"> 174</a>         &quot;unverified_import&quot;: 0,</span>
+<span id="L175"><a href="#L175" aria-label="Line 175"> 175</a>     }</span>
+<span id="L176"><a href="#L176" aria-label="Line 176"> 176</a>     client.post(</span>
+<span id="L177"><a href="#L177" aria-label="Line 177"> 177</a>         &quot;/api/import&quot;,</span>
+<span id="L178"><a href="#L178" aria-label="Line 178"> 178</a>         files={</span>
+<span id="L179"><a href="#L179" aria-label="Line 179"> 179</a>             &quot;file&quot;: (&quot;real-production.log&quot;, (samples / &quot;linux-auth.log&quot;).read_bytes())</span>
+<span id="L180"><a href="#L180" aria-label="Line 180"> 180</a>         },</span>
+<span id="L181"><a href="#L181" aria-label="Line 181"> 181</a>     )</span>
+<span id="L182"><a href="#L182" aria-label="Line 182"> 182</a>     assert client.get(&quot;/api/stats&quot;).json()[&quot;dataset&quot;][&quot;bundled_synthetic_match&quot;] == 50</span>
+<span id="L183"><a href="#L183" aria-label="Line 183"> 183</a>     content = b&quot;2026-10-26T12:00:00Z other sshd[2]: Failed password for bob from 192.0.2.8 port 22 ssh2&quot;</span>
+<span id="L184"><a href="#L184" aria-label="Line 184"> 184</a>     client.post(&quot;/api/import&quot;, files={&quot;file&quot;: (&quot;bundled synthetic demo&quot;, content)})</span>
+<span id="L185"><a href="#L185" aria-label="Line 185"> 185</a>     stats = client.get(&quot;/api/stats&quot;).json()</span>
+<span id="L186"><a href="#L186" aria-label="Line 186"> 186</a>     assert stats[&quot;dataset&quot;] == {&quot;bundled_synthetic_match&quot;: 50, &quot;unverified_import&quot;: 1}</span>
+<span id="L187"><a href="#L187" aria-label="Line 187"> 187</a>     event = client.get(&quot;/api/events?q=other&quot;).json()[&quot;items&quot;][0]</span>
+<span id="L188"><a href="#L188" aria-label="Line 188"> 188</a>     assert event[&quot;dataset_kind&quot;] == &quot;unverified_import&quot;</span>
+<span id="L189"><a href="#L189" aria-label="Line 189"> 189</a>     assert (</span>
+<span id="L190"><a href="#L190" aria-label="Line 190"> 190</a>         client.get(f&quot;/api/events/{event[&#x27;id&#x27;]}&quot;).json()[&quot;dataset_kind&quot;]</span>
+<span id="L191"><a href="#L191" aria-label="Line 191"> 191</a>         == &quot;unverified_import&quot;</span>
+<span id="L192"><a href="#L192" aria-label="Line 192"> 192</a>     )</span>
+<span id="L193"><a href="#L193" aria-label="Line 193"> 193</a> </span>
+<span id="L194"><a href="#L194" aria-label="Line 194"> 194</a> </span>
+<span id="L195"><a href="#L195" aria-label="Line 195"> 195</a> def test_existing_database_migrates_without_losing_events_or_config(tmp_path):</span>
+<span id="L196"><a href="#L196" aria-label="Line 196"> 196</a>     path = tmp_path / &quot;legacy.db&quot;</span>
+<span id="L197"><a href="#L197" aria-label="Line 197"> 197</a>     with TestClient(create_app(path), base_url=&quot;http://localhost&quot;) as c:</span>
+<span id="L198"><a href="#L198" aria-label="Line 198"> 198</a>         c.post(&quot;/api/demo&quot;)</span>
+<span id="L199"><a href="#L199" aria-label="Line 199"> 199</a>         config = c.get(&quot;/api/settings&quot;).json()</span>
+<span id="L200"><a href="#L200" aria-label="Line 200"> 200</a>     with sqlite3.connect(path) as db:</span>
+<span id="L201"><a href="#L201" aria-label="Line 201"> 201</a>         db.execute(&quot;DROP TABLE notebooks&quot;)</span>
+<span id="L202"><a href="#L202" aria-label="Line 202"> 202</a>     with TestClient(create_app(path), base_url=&quot;http://localhost&quot;) as c:</span>
+<span id="L203"><a href="#L203" aria-label="Line 203"> 203</a>         assert c.get(&quot;/api/stats&quot;).json()[&quot;events&quot;] == 85</span>
+<span id="L204"><a href="#L204" aria-label="Line 204"> 204</a>         assert c.get(&quot;/api/settings&quot;).json() == config</span>
+<span id="L205"><a href="#L205" aria-label="Line 205"> 205</a>         assert c.get(&quot;/api/notebooks&quot;).json() == {&quot;items&quot;: []}</span>
+<span id="L206"><a href="#L206" aria-label="Line 206"> 206</a> </span>
+<span id="L207"><a href="#L207" aria-label="Line 207"> 207</a> </span>
+<span id="L208"><a href="#L208" aria-label="Line 208"> 208</a> def test_large_alert_has_explicit_snapshot_limit_and_replay_refusal(client):</span>
+<span id="L209"><a href="#L209" aria-label="Line 209"> 209</a>     from datetime import datetime, timedelta, timezone</span>
+<span id="L210"><a href="#L210" aria-label="Line 210"> 210</a> </span>
+<span id="L211"><a href="#L211" aria-label="Line 211"> 211</a>     records = []</span>
+<span id="L212"><a href="#L212" aria-label="Line 212"> 212</a>     for i in range(250):</span>
+<span id="L213"><a href="#L213" aria-label="Line 213"> 213</a>         stamp = (</span>
+<span id="L214"><a href="#L214" aria-label="Line 214"> 214</a>             datetime(2026, 10, 26, tzinfo=timezone.utc) + timedelta(seconds=i)</span>
+<span id="L215"><a href="#L215" aria-label="Line 215"> 215</a>         ).isoformat()</span>
+<span id="L216"><a href="#L216" aria-label="Line 216"> 216</a>         records.append(</span>
+<span id="L217"><a href="#L217" aria-label="Line 217"> 217</a>             f&quot;{stamp} dense sshd[100]: Failed password for alice from 192.0.2.9 port {40000 + i} ssh2&quot;</span>
+<span id="L218"><a href="#L218" aria-label="Line 218"> 218</a>         )</span>
+<span id="L219"><a href="#L219" aria-label="Line 219"> 219</a>     result = client.post(</span>
+<span id="L220"><a href="#L220" aria-label="Line 220"> 220</a>         &quot;/api/import&quot;, files={&quot;file&quot;: (&quot;dense.log&quot;, &quot;\n&quot;.join(records))}</span>
+<span id="L221"><a href="#L221" aria-label="Line 221"> 221</a>     )</span>
+<span id="L222"><a href="#L222" aria-label="Line 222"> 222</a>     assert result.json()[&quot;inserted&quot;] == 250</span>
+<span id="L223"><a href="#L223" aria-label="Line 223"> 223</a>     alert = client.get(&quot;/api/alerts&quot;).json()[&quot;items&quot;][0]</span>
+<span id="L224"><a href="#L224" aria-label="Line 224"> 224</a>     assert len(alert[&quot;evidence&quot;]) == 250</span>
+<span id="L225"><a href="#L225" aria-label="Line 225"> 225</a>     assert (</span>
+<span id="L226"><a href="#L226" aria-label="Line 226"> 226</a>         client.post(</span>
+<span id="L227"><a href="#L227" aria-label="Line 227"> 227</a>             &quot;/api/lab/replay&quot;, json={&quot;alert_id&quot;: alert[&quot;id&quot;], &quot;settings&quot;: DEFAULTS}</span>
+<span id="L228"><a href="#L228" aria-label="Line 228"> 228</a>         ).status_code</span>
+<span id="L229"><a href="#L229" aria-label="Line 229"> 229</a>         == 422</span>
+<span id="L230"><a href="#L230" aria-label="Line 230"> 230</a>     )</span>
+<span id="L231"><a href="#L231" aria-label="Line 231"> 231</a>     saved = client.put(</span>
+<span id="L232"><a href="#L232" aria-label="Line 232"> 232</a>         f&quot;/api/alerts/{alert[&#x27;id&#x27;]}/notebook&quot;, json={&quot;observation&quot;: &quot;Dense sequence&quot;}</span>
+<span id="L233"><a href="#L233" aria-label="Line 233"> 233</a>     ).json()</span>
+<span id="L234"><a href="#L234" aria-label="Line 234"> 234</a>     assert len(saved[&quot;events&quot;]) == 200</span>
+<span id="L235"><a href="#L235" aria-label="Line 235"> 235</a>     assert saved[&quot;evidence_omitted&quot;] == 50</span>
+<span id="L236"><a href="#L236" aria-label="Line 236"> 236</a>     assert saved[&quot;snapshot_policy&quot;] == &quot;first_and_final&quot;</span>
+<span id="L237"><a href="#L237" aria-label="Line 237"> 237</a>     assert saved[&quot;events&quot;][-1][&quot;id&quot;] == alert[&quot;evidence&quot;][-1]</span>
+<span id="L238"><a href="#L238" aria-label="Line 238"> 238</a>     assert [e[&quot;id&quot;] for e in saved[&quot;events&quot;][:-1]] == alert[&quot;evidence&quot;][:199]</span>
+<span id="L239"><a href="#L239" aria-label="Line 239"> 239</a>     assert saved[&quot;alert&quot;][&quot;evidence&quot;] == alert[&quot;evidence&quot;]</span>
+<span id="L240"><a href="#L240" aria-label="Line 240"> 240</a> </span>
+<span id="L241"><a href="#L241" aria-label="Line 241"> 241</a> </span>
+<span id="L242"><a href="#L242" aria-label="Line 242"> 242</a> def test_saving_notes_does_not_change_alert_status_or_parameters(client):</span>
+<span id="L243"><a href="#L243" aria-label="Line 243"> 243</a>     client.post(&quot;/api/demo&quot;)</span>
+<span id="L244"><a href="#L244" aria-label="Line 244"> 244</a>     before = client.get(&quot;/api/alerts&quot;).json()</span>
+<span id="L245"><a href="#L245" aria-label="Line 245"> 245</a>     a = before[&quot;items&quot;][0]</span>
+<span id="L246"><a href="#L246" aria-label="Line 246"> 246</a>     config = client.get(&quot;/api/settings&quot;).json()</span>
+<span id="L247"><a href="#L247" aria-label="Line 247"> 247</a>     client.put(</span>
+<span id="L248"><a href="#L248" aria-label="Line 248"> 248</a>         f&quot;/api/alerts/{a[&#x27;id&#x27;]}/notebook&quot;,</span>
+<span id="L249"><a href="#L249" aria-label="Line 249"> 249</a>         json={&quot;assessment&quot;: &quot;suspicious&quot;, &quot;observation&quot;: &quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;},</span>
+<span id="L250"><a href="#L250" aria-label="Line 250"> 250</a>     )</span>
+<span id="L251"><a href="#L251" aria-label="Line 251"> 251</a>     assert client.get(&quot;/api/alerts&quot;).json() == before</span>
+<span id="L252"><a href="#L252" aria-label="Line 252"> 252</a>     assert client.get(&quot;/api/settings&quot;).json() == config</span>
+<span id="L253"><a href="#L253" aria-label="Line 253"> 253</a>     assert (</span>
+<span id="L254"><a href="#L254" aria-label="Line 254"> 254</a>         client.get(f&quot;/api/notebooks/{a[&#x27;id&#x27;]}&quot;).json()[&quot;note&quot;][&quot;observation&quot;]</span>
+<span id="L255"><a href="#L255" aria-label="Line 255"> 255</a>         == &quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;</span>
+<span id="L256"><a href="#L256" aria-label="Line 256"> 256</a>     )</span></code></pre></main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

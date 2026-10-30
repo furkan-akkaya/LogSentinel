@@ -216,7 +216,7 @@
 <p>Open <strong>Security Alerts</strong>, select a detection, review the matching identity and parameters, then choose <strong>Inspect record</strong>. The raw and normalized record remain available. Analyst checks are suggestions; the app does not perform account validation or post-login analysis.</p>
 <h2 id="8-reanalyze-without-implying-an-audit-history">8. Reanalyze without implying an audit history</h2>
 <p>An import with new events replays the stored dataset. A settings change replays it in one transaction. A duplicate-only import skips replay because no event changed.</p>
-<p>Existing investigation status survives when the alert ID remains present. Changed anchors or temporarily removed alerts can lose their status. Restoring thresholds can recreate an alert as <code>new</code>, even if the ID returns. There is no permanent case history.</p>
+<p>Existing investigation status survives when the alert ID remains present. Changed anchors or temporarily removed alerts can lose their status. Restoring thresholds can recreate an alert as <code>new</code>, even if the ID returns. Live status has no permanent history. In v1.2, explicitly saved Case Notes retain a separate evidence snapshot even after an alert disappears. Each save replaces the previous snapshot.</p>
 <h2 id="code-and-reproducible-evidence">Code and reproducible evidence</h2>
 <ul>
 <li><a href="../../_source/logsentinel/parsers.py.html">Parsers and event ID</a></li>
@@ -228,4 +228,6 @@
 <li><a href="../../_source/tools/verify_examples.py.html">Documented-example verifier</a> and <a href="../../_source/tests/test_examples.py.html">example tests</a></li>
 </ul>
 <p>From the repository root, run <code>python tools/verify_examples.py</code> and <code>python -m pytest</code>. Both use disposable test databases. The <a href="../reports/SSH_CASE_STUDY.html">SSH case study</a> separates observations from hypotheses.</p>
+<h2 id="try-the-rule-without-changing-your-workspace">Try the rule without changing your workspace</h2>
+<p>Open the alert and select <strong>Replay this evidence in Detection Lab</strong>. Change one parameter and follow the real engine output at each event. <a href="../LEARNING_WORKSPACE.html">Replay scope and limits</a> explain why this experiment cannot measure detection coverage.</p>
 </main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

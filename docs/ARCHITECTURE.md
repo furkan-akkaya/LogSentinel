@@ -63,3 +63,11 @@ The dataset is loaded in memory for replay, and search uses SQLite substring sca
 ## Technology choices
 
 FastAPI provides typed inputs and OpenAPI with a small Python service. SQLite avoids server dependencies and supports transactions. Static JavaScript and CSS keep installation independent of Node.js. Docker Compose packages the same application; its named volume owns the database. Python's `defusedxml` parser rejects DTD/entity expansion. The API documentation is local HTML, avoiding CDN dependencies.
+
+## Isolated replay and retained notes · v1.2
+
+The lab module parses small synthetic scenarios and calls the existing detection engine for sorted event prefixes. Alert experiments load only the selected evidence; no lab path calls ingestion or reanalysis. A 200-record bound limits replay cost.
+
+A separate `notebooks` table stores manual notes with a bounded evidence snapshot. It has no foreign key to the transient alerts table, so reanalysis cannot remove saved reasoning. Each save replaces the previous snapshot atomically. This is a deliberate limit, not an audit trail.
+
+Event IDs and parser contracts remain unchanged. A computed dataset label compares event IDs against the bundled demo; unmatched files remain unverified. See [implementation contracts](LEARNING_WORKSPACE.md).

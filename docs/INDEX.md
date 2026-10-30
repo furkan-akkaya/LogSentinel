@@ -42,3 +42,7 @@ Read the [synthetic SSH case study](reports/SSH_CASE_STUDY.md) for a concise tec
 - [Portfolio presentation](PORTFOLIO.md): a short English description and a Turkish presentation narrative.
 
 This project demonstrates file-based analysis and explainable rule behavior. It does not measure production detection accuracy or establish its author's employment or learning history.
+
+## Interactive investigation workspace · v1.2
+
+Open **Detection Lab** in the app, or read [the learning workflow and research](LEARNING_WORKSPACE.md). [Current validation](VALIDATION_V1_2.md) separates v1.2 checks from earlier release results.

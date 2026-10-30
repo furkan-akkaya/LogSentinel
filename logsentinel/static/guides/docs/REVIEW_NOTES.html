@@ -50,4 +50,6 @@
 <p>The update preserves normalized IDs for existing valid samples. Provider validation does not add fields to event identity metadata. Stored historical records are not deleted or silently reparsed. New-import validation therefore does not certify historical records.</p>
 <p>Existing alert bodies can lack the new parameter snapshot. Their detail view uses the stored configuration, which the prior version committed atomically with alerts. This is read-only compatibility; it does not rewrite case status.</p>
 <p>The app still lacks durable case history, binary EVTX support, live collection, authentication, and production-scale validation. The release does not claim to resolve those limits.</p>
+<h2 id="follow-up--october-29-2026">Follow-up · October 29, 2026</h2>
+<p>Version 1.2 adds isolated engine replay, manual Case Notes and explicit dataset context. Earlier findings above describe v1.1; current capabilities and remaining limits are recorded in <a href="LEARNING_WORKSPACE.html">the learning workspace</a> and <a href="VALIDATION_V1_2.html">v1.2 validation</a>.</p>
 </main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

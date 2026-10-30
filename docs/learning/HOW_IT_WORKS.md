@@ -171,7 +171,7 @@ Open **Security Alerts**, select a detection, review the matching identity and p
 
 An import with new events replays the stored dataset. A settings change replays it in one transaction. A duplicate-only import skips replay because no event changed.
 
-Existing investigation status survives when the alert ID remains present. Changed anchors or temporarily removed alerts can lose their status. Restoring thresholds can recreate an alert as `new`, even if the ID returns. There is no permanent case history.
+Existing investigation status survives when the alert ID remains present. Changed anchors or temporarily removed alerts can lose their status. Restoring thresholds can recreate an alert as `new`, even if the ID returns. Live status has no permanent history. In v1.2, explicitly saved Case Notes retain a separate evidence snapshot even after an alert disappears. Each save replaces the previous snapshot.
 
 ## Code and reproducible evidence
 
@@ -184,3 +184,7 @@ Existing investigation status survives when the alert ID remains present. Change
 - [Documented-example verifier](../../tools/verify_examples.py) and [example tests](../../tests/test_examples.py)
 
 From the repository root, run `python tools/verify_examples.py` and `python -m pytest`. Both use disposable test databases. The [SSH case study](../reports/SSH_CASE_STUDY.md) separates observations from hypotheses.
+
+## Try the rule without changing your workspace
+
+Open the alert and select **Replay this evidence in Detection Lab**. Change one parameter and follow the real engine output at each event. [Replay scope and limits](../LEARNING_WORKSPACE.md) explain why this experiment cannot measure detection coverage.

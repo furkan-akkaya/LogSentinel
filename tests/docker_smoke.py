@@ -53,7 +53,7 @@ def run():
         try:
             command("up", "--build", "-d", "--wait", "--wait-timeout", "120")
             assert request("/health")["status"] == "ok"
-            assert request("/health")["version"] == "1.1.0"
+            assert request("/health")["version"] == "1.2.0"
             with urllib.request.urlopen(
                 f"http://127.0.0.1:{port}/static/guides/docs/INDEX.html"
             ) as response:
@@ -66,6 +66,26 @@ def run():
                 and explanation["parameters"]["threshold"] == 3
             )
             request("/alerts/" + alert, "PATCH", {"status": "resolved"})
+            note = request(
+                "/alerts/" + alert + "/notebook",
+                "PUT",
+                {
+                    "observation": "Synthetic sudo failures",
+                    "assessment": "undetermined",
+                },
+            )
+            from logsentinel.detection import DEFAULTS
+
+            experiment = request(
+                "/lab/replay",
+                "POST",
+                {
+                    "scenario": "window_edge",
+                    "settings": {**DEFAULTS, "window_seconds": 299},
+                },
+            )
+            assert experiment["alerts"] == []
+            assert request("/stats")["events"] == 85
             command("restart")
             for attempt in range(60):
                 try:
@@ -75,16 +95,18 @@ def run():
                     time.sleep(0.25)
             assert request("/stats")["events"] == 85
             assert request("/alerts/" + alert)["status"] == "resolved"
+            assert request("/notebooks/" + alert) == note
             assert request("/demo", "POST")["inserted"] == 0
             # A full container recreation must preserve the named volume too.
             command("down")
             command("up", "-d", "--wait", "--wait-timeout", "120")
             assert request("/stats")["events"] == 85
             assert request("/alerts/" + alert)["status"] == "resolved"
+            assert request("/notebooks/" + alert) == note
             user = command("exec", "-T", "logsentinel", "id", "-u").strip()
             assert user == "10001"
             print(
-                "PASS: Docker Compose build/start, v1.1 health, packaged guides, explanations, demo, dedup, non-root user, restart, recreation, persistent events and status"
+                "PASS: Docker Compose build/start, v1.2 health, guides, explanations, demo, dedup, isolated lab, non-root user, restart, recreation, persistent events, status and notes"
             )
         except subprocess.CalledProcessError as exc:
             print(exc.stdout, exc.stderr)

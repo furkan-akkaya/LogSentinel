@@ -30,3 +30,7 @@ Suggested repository description:
 Suggested topics: `cybersecurity`, `siem`, `soc`, `log-analysis`, `fastapi`, `sqlite`, `mitre-attack`, `python`.
 
 Use the actual screenshots under `docs/screenshots/` for the project page. Describe the app as a file-based portfolio project with automated correlation tests. Avoid claims about enterprise scale, production detection coverage, or verified account compromise.
+
+## v1.2.0 local update
+
+The October 29 update adds Detection Lab, retained manual Case Notes and dataset context. See [current validation](VALIDATION_V1_2.md) before publishing. No remote push, tag or GitHub release is implied by this local version update.

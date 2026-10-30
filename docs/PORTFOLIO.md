@@ -35,3 +35,13 @@ Sentetik demo, gerçek motorla 85 olaydan beş uyarı üretir. Proje dosya taban
 5. Show the tested Windows source-validation rule and its compatibility limit.
 
 Use only synthetic screenshots and samples. The local app has no authentication; do not expose it publicly as a portfolio service. Publish reviewed source and screenshots through your own normal publishing process.
+
+## Demonstrate v1.2 without inventing a learning story
+
+1. Open an alert and show its actual raw records.
+2. Replay that evidence in Detection Lab and change one parameter.
+3. Compare the 299-second and 300-second boundary experiment.
+4. Explain why the cross-account scenario produces no alerts.
+5. Save an observation, hypothesis and next evidence request in Case Notes.
+
+These behaviors demonstrate parsing, event-time correlation, rule testing, evidence handling, transaction design and analyst reasoning. They do not establish course completion, independent authorship, professional SOC experience, or production detection accuracy.
