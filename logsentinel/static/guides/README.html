@@ -3,9 +3,9 @@
 <strong>1.2.0b1 · local-use beta</strong></p>
 <p><strong>Mini SIEM &amp; Security Log Analyzer</strong> — a local application that turns Linux and Windows authentication files into explainable security alerts.</p>
 <p>Authentication records describe individual attempts. LogEssential groups related records so a reviewer can see repeated failures and success-after-failure sequences. Each alert links to its matching identity, threshold, and original evidence.</p>
-<p>The working demo produces <strong>85 events and five alerts across four hosts</strong>. Visitors can inspect alerts, replay evidence in Detection Lab, and save Case Notes without a lab server. Technical readers can follow the same records through the code and tests.</p>
+<p>The bundled demo produces <strong>85 events and five alerts across four hosts</strong>. Alerts can be inspected, replayed in Detection Lab and documented in Case Notes without a lab server.</p>
 <p>Start with the <a href="docs/INDEX.html">project guide</a>, <a href="docs/learning/HOW_IT_WORKS.html">How it works</a>, or the <a href="docs/reports/SSH_CASE_STUDY.html">synthetic SSH case report</a>. The app also serves these guides locally through <strong>Project guide</strong>.</p>
-<h2 id="learn-by-investigating">Learn by investigating</h2>
+<h2 id="detection-lab-and-case-notes">Detection Lab and Case Notes</h2>
 <pre><code class="language-mermaid">flowchart LR
     A[Raw evidence] --&gt; B[Explainable alert]
     B --&gt; C[Isolated Detection Lab]
@@ -48,7 +48,7 @@ python -m pip install -r requirements.txt
 python -m pip install --no-deps -e .
 python -m uvicorn logsentinel.app:app --host 127.0.0.1 --port 8765
 </code></pre>
-<p>PowerShell: create the environment with <code>py -m venv .venv</code>, then use <code>.venv\Scripts\python.exe</code> for the Python commands. Docker Desktop is the validated Windows deployment approach by design; actual Windows execution is not claimed.</p>
+<p>PowerShell: create the environment with <code>py -m venv .venv</code>, then use <code>.venv\Scripts\python.exe</code> for the Python commands. Docker Desktop is the recommended way to run it on Windows.</p>
 <p>SQLite defaults to <code>data/logsentinel.db</code> relative to the working directory. Override it with <code>LOGSENTINEL_DB</code>. Start one application worker. The app initializes its own database and indexes.</p>
 <h2 id="what-you-can-do">What you can do</h2>
 <ul>
@@ -115,10 +115,10 @@ python -m uvicorn logsentinel.app:app --host 127.0.0.1 --port 8765
 </tr>
 </tbody>
 </table></div>
-<p>These rules detect suspicious patterns, <strong>not confirmed compromise</strong>. Repeated sudo failures can be ordinary typing mistakes. ATT&amp;CK mappings describe the observed behavior; they do not establish intent. See <a href="https://attack.mitre.org/techniques/T1110/001/">MITRE password guessing</a> and <a href="https://attack.mitre.org/techniques/T1078/">valid accounts</a>.</p>
+<p>See <a href="https://attack.mitre.org/techniques/T1110/001/">MITRE password guessing</a> and <a href="https://attack.mitre.org/techniques/T1078/">valid accounts</a>.</p>
 <p>Windows events without IP, target user, domain, or logon type remain searchable but cannot trigger these correlation rules. Sudo summaries remain searchable but do not count toward thresholds, avoiding double counting PAM details. Sudo records without a terminal are also excluded from correlation.</p>
-<p>Explicit Windows channel/provider contradictions are rejected before normalization. Missing source fields retain simplified-export compatibility; accepted fields do not establish authenticity. See <a href="docs/FORMATS.html">the exact policy</a>.</p>
-<p>Windows 4625 means logon failure, not necessarily a wrong password. Success after failures does not establish account takeover. These per-identity rules do not aggregate password spraying across accounts or distributed attempts across IPs.</p>
+<p>Windows events with contradictory channel/provider fields are rejected before normalization. See <a href="docs/FORMATS.html">the exact policy</a>.</p>
+<p>Rules correlate per identity; password spraying across accounts or attempts distributed across IPs are not aggregated.</p>
 <h2 id="architecture">Architecture</h2>
 <pre><code class="language-mermaid">flowchart LR
     A[File upload / bundled demo] --&gt; B[Linux / Windows parsers]
@@ -144,8 +144,7 @@ python -m uvicorn logsentinel.app:app --host 127.0.0.1 --port 8765
 <pre><code class="language-sh">python -m pip install -e '.[test]'
 python -m pytest
 </code></pre>
-<p>Tests also cover isolated replay, exact boundary experiments, evidence limits, note persistence after removed alerts, startup migration, and content-based dataset labels.</p>
-<p>Tests cover five attack scenarios, benign activity, correlation boundaries and identities, duplicates, malformed input, XML safety, date normalization, API filtering, settings, persistence, and local HTTP boundaries.</p>
+<p>Tests cover five attack scenarios, benign activity, correlation boundaries and identities, duplicates, malformed input, XML safety, date normalization, API filtering, settings, persistence, local HTTP boundaries, isolated replay, evidence limits, note persistence, startup migration and dataset labels.</p>
 <p>Optional real-browser checks:</p>
 <pre><code class="language-sh">python -m pip install -e '.[test,browser]'
 python -m playwright install chromium
@@ -161,13 +160,8 @@ python tools/build_guides.py
 <h2 id="scope-and-limits">Scope and limits</h2>
 <p>This is a small, local analysis tool. There is no authentication, multi-user access control, background log collection, real-time streaming, Sigma engine, AI integration, or network inspection. Defaults cap each import at 20,000 records and each database at 50,000 events. Imports and setting changes replay the stored dataset; use it for small datasets.</p>
 <p>Raw logs and normalized identities are stored in plaintext SQLite. Keep the database private. Do not expose the service to a LAN or public network. See <a href="SECURITY.html">SECURITY.md</a> before using sensitive logs.</p>
-<h2 id="portfolio-description">Portfolio description</h2>
-<blockquote>
-<p>LogEssential normalizes Linux SSH/sudo and Windows Security files into SQLite. Five configurable event-time rules generate evidence-linked alerts. The project includes source validation, duplicate-resistant ingestion, isolated engine experiments, retained analyst notes, measured scenarios, and automated parser, correlation, and API checks. Browser validation is documented with its executed scope.</p>
-</blockquote>
-<p>See <a href="docs/PORTFOLIO.html">portfolio presentation</a> for a short Turkish narrative and a demonstration sequence. No personal experience, independent authorship, or production-use claim is implied.</p>
 <h2 id="license">License</h2>
 <p><a href="_source/LICENSE.html">MIT</a>. Bundled logs are synthetic; addresses use private or documentation ranges.</p>
 <h2 id="release-and-updates">Release and updates</h2>
-<p>Use the <a href="docs/RELEASE.html">beta release instructions</a> for verified packages, upgrade backups and rollback. The <a href="CHANGELOG.html">changelog</a> lists this release’s changes. Only source and packages are public; the local service must remain on loopback.</p>
+<p>Use the <a href="docs/RELEASE.html">beta release instructions</a> for verified packages, upgrade backups and rollback. The <a href="CHANGELOG.html">changelog</a> lists this release’s changes. Run the service on localhost only.</p>
 </main><footer>Local project documentation · Synthetic examples · No external assets</footer></body></html>

@@ -7,11 +7,11 @@ LogEssential, formerly LogSentinel, is the same local application. The `logsenti
 
 Authentication records describe individual attempts. LogEssential groups related records so a reviewer can see repeated failures and success-after-failure sequences. Each alert links to its matching identity, threshold, and original evidence.
 
-The working demo produces **85 events and five alerts across four hosts**. Visitors can inspect alerts, replay evidence in Detection Lab, and save Case Notes without a lab server. Technical readers can follow the same records through the code and tests.
+The bundled demo produces **85 events and five alerts across four hosts**. Alerts can be inspected, replayed in Detection Lab and documented in Case Notes without a lab server.
 
 Start with the [project guide](docs/INDEX.md), [How it works](docs/learning/HOW_IT_WORKS.md), or the [synthetic SSH case report](docs/reports/SSH_CASE_STUDY.md). The app also serves these guides locally through **Project guide**.
 
-## Learn by investigating
+## Detection Lab and Case Notes
 
 ```mermaid
 flowchart LR
@@ -80,7 +80,7 @@ python -m pip install --no-deps -e .
 python -m uvicorn logsentinel.app:app --host 127.0.0.1 --port 8765
 ```
 
-PowerShell: create the environment with `py -m venv .venv`, then use `.venv\Scripts\python.exe` for the Python commands. Docker Desktop is the validated Windows deployment approach by design; actual Windows execution is not claimed.
+PowerShell: create the environment with `py -m venv .venv`, then use `.venv\Scripts\python.exe` for the Python commands. Docker Desktop is the recommended way to run it on Windows.
 
 SQLite defaults to `data/logsentinel.db` relative to the working directory. Override it with `LOGSENTINEL_DB`. Start one application worker. The app initializes its own database and indexes.
 
@@ -114,13 +114,13 @@ It contains 280 measured parameter combinations and synthetic records. It needs 
 | Windows success after failures | 3 failures, then success / 300s | Same Windows identity | Critical | T1110.001, possible T1078 |
 | Repeated sudo failures | 3 PAM failures / 300s | Host + invoking user + terminal | Medium | T1110.001 |
 
-These rules detect suspicious patterns, **not confirmed compromise**. Repeated sudo failures can be ordinary typing mistakes. ATT&CK mappings describe the observed behavior; they do not establish intent. See [MITRE password guessing](https://attack.mitre.org/techniques/T1110/001/) and [valid accounts](https://attack.mitre.org/techniques/T1078/).
+See [MITRE password guessing](https://attack.mitre.org/techniques/T1110/001/) and [valid accounts](https://attack.mitre.org/techniques/T1078/).
 
 Windows events without IP, target user, domain, or logon type remain searchable but cannot trigger these correlation rules. Sudo summaries remain searchable but do not count toward thresholds, avoiding double counting PAM details. Sudo records without a terminal are also excluded from correlation.
 
-Explicit Windows channel/provider contradictions are rejected before normalization. Missing source fields retain simplified-export compatibility; accepted fields do not establish authenticity. See [the exact policy](docs/FORMATS.md).
+Windows events with contradictory channel/provider fields are rejected before normalization. See [the exact policy](docs/FORMATS.md).
 
-Windows 4625 means logon failure, not necessarily a wrong password. Success after failures does not establish account takeover. These per-identity rules do not aggregate password spraying across accounts or distributed attempts across IPs.
+Rules correlate per identity; password spraying across accounts or attempts distributed across IPs are not aggregated.
 
 ## Architecture
 
@@ -156,9 +156,7 @@ python -m pip install -e '.[test]'
 python -m pytest
 ```
 
-Tests also cover isolated replay, exact boundary experiments, evidence limits, note persistence after removed alerts, startup migration, and content-based dataset labels.
-
-Tests cover five attack scenarios, benign activity, correlation boundaries and identities, duplicates, malformed input, XML safety, date normalization, API filtering, settings, persistence, and local HTTP boundaries.
+Tests cover five attack scenarios, benign activity, correlation boundaries and identities, duplicates, malformed input, XML safety, date normalization, API filtering, settings, persistence, local HTTP boundaries, isolated replay, evidence limits, note persistence, startup migration and dataset labels.
 
 Optional real-browser checks:
 
@@ -187,16 +185,10 @@ This is a small, local analysis tool. There is no authentication, multi-user acc
 
 Raw logs and normalized identities are stored in plaintext SQLite. Keep the database private. Do not expose the service to a LAN or public network. See [SECURITY.md](SECURITY.md) before using sensitive logs.
 
-## Portfolio description
-
-> LogEssential normalizes Linux SSH/sudo and Windows Security files into SQLite. Five configurable event-time rules generate evidence-linked alerts. The project includes source validation, duplicate-resistant ingestion, isolated engine experiments, retained analyst notes, measured scenarios, and automated parser, correlation, and API checks. Browser validation is documented with its executed scope.
-
-See [portfolio presentation](docs/PORTFOLIO.md) for a short Turkish narrative and a demonstration sequence. No personal experience, independent authorship, or production-use claim is implied.
-
 ## License
 
 [MIT](LICENSE). Bundled logs are synthetic; addresses use private or documentation ranges.
 
 ## Release and updates
 
-Use the [beta release instructions](docs/RELEASE.md) for verified packages, upgrade backups and rollback. The [changelog](CHANGELOG.md) lists this release’s changes. Only source and packages are public; the local service must remain on loopback.
+Use the [beta release instructions](docs/RELEASE.md) for verified packages, upgrade backups and rollback. The [changelog](CHANGELOG.md) lists this release’s changes. Run the service on localhost only.
